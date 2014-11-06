@@ -16,9 +16,10 @@ FIELDS = [
 ]
 
 TIME_FIELDS = [
-    dict(key='real_time',       name='TOTAL',   format='time',  visible=True),
-    dict(key='memc:duration',   name='MEMC',    format='time',  visible=True),
-    dict(key='redis:duration',  name='REDIS',   format='time',  visible=True),
-    dict(key='solr:duration',   name='SOLR',    format='time',  visible=True),
-    dict(key='sql:duration',    name='SQL',     format='time',  visible=True),
+    dict(key='real_time',      name='TOTAL',         format='time', visible=True),
+    dict(key='memc:duration',  name='MEMC',          format='time', visible=True),
+    dict(key='redis:duration', name='REDIS',         format='time', visible=True),
+    dict(key='solr:duration',  name='SOLR',          format='time', visible=True),
+    dict(key='es:duration',    name='ELASTICSEARCH', format='time', visible=True),
+    dict(key='sql:duration',   name='SQL',           format='time', visible=True),
 ]
