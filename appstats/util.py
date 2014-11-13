@@ -61,10 +61,8 @@ def get_chart_info(periodic_counters, time_fields, app_id, name, hours):
 
         for i, time_field in enumerate(time_fields):
             key = time_field['key']
-            value = doc.get(key)
-            if value:
-                value = float(value) / doc['NUMBER']
-            time_data[i].append([date, value * 1000])
+            value = doc.get(key, 0)
+            time_data[i].append([date, float(value) / doc['NUMBER'] * 1000])
     return num_data, time_data
 
 
