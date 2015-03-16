@@ -6,3 +6,4 @@ tags
 *.pyc
 *.sublime-project
 *.sublime-workspace
+.idea
