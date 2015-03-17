@@ -7,3 +7,5 @@ tags
 *.sublime-project
 *.sublime-workspace
 .idea
+.vagga
+mdb

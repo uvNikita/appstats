@@ -1,0 +1,30 @@
+containers:
+  appstats:
+    setup:
+    - !Alpine v3.1
+    - !Py2Requirements "requirements.txt"
+    - !Install [py-gunicorn, py-setuptools]
+  redis:
+    setup:
+    - !Alpine v3.1
+    - !Install [redis]
+
+  mongodb:
+    setup:
+    - !Ubuntu trusty
+    - !UbuntuUniverse
+    - !Sh "mkdir -p /work/mdb"
+    - !Install [mongodb-server]
+
+commands:
+  run: !Supervise
+    children:
+      redis: !Command
+        container: redis
+        run: redis-server --daemonize no
+      mongodb: !Command
+        container: mongodb
+        run: mongod --dbpath /work/mdb
+      appstats: !Command
+        container: appstats
+        run: gunicorn appstats.app:app.wsgi_app
