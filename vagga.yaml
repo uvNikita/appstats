@@ -3,6 +3,7 @@ containers:
     setup:
     - !Alpine v3.1
     - !Py2Requirements "requirements.txt"
+    - !Py2Install [ipython==0.10]
     - !Install [py-gunicorn, py-setuptools]
   redis:
     setup:
@@ -28,3 +29,9 @@ commands:
       appstats: !Command
         container: appstats
         run: gunicorn appstats.app:app.wsgi_app
+
+  shell: !Command
+    container: appstats
+    environ:
+      HOME: /work
+    run: python manage.py shell

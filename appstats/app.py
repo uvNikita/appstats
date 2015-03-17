@@ -269,15 +269,15 @@ def add_nav_list():
                       url=url_for('.tasks', app_id=app_id),
                       active=(request.endpoint == 'stats_frontend.tasks' or
                               request.endpoint == 'stats_frontend.tasks_info')))
-    rates.append(dict(name='Task queue',
-                      url='',
-                      active=False))
-    rates.append(dict(name='Logs',
-                      url='',
-                      active=False))
-    rates.append(dict(name='Tracing',
-                      url='',
-                      active=False))
+    # rates.append(dict(name='Task queue',
+    #                   url='',
+    #                   active=False))
+    # rates.append(dict(name='Logs',
+    #                   url='',
+    #                   active=False))
+    # rates.append(dict(name='Tracing',
+    #                   url='',
+    #                   active=False))
     nav_list = dict(name='AppStats', url=url_for('dashboard'),
                     rates=rates, apps_list=dict(title=app_name, apps=apps))
 
