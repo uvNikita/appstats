@@ -30,8 +30,12 @@ commands:
         container: appstats
         run: gunicorn appstats.app:app.wsgi_app
 
-  shell: !Command
+  pyshell: !Command
     container: appstats
     environ:
       HOME: /work
     run: python manage.py shell
+
+  shell: !Command
+    container: appstats
+    run: sh
