@@ -7,6 +7,8 @@ from datetime import datetime, timedelta, time
 
 from pymongo.errors import AutoReconnect
 
+from .anomaly import Anomaly
+
 
 log = logging.getLogger(__name__)
 
@@ -332,3 +334,42 @@ class PeriodicCounter(object):
             self.redis_db.set(prev_upd_key, prev_upd)
             oldest_date = now - timedelta(hours=self.period)
             self.collection.remove({'date': {'$lte': oldest_date}})
+
+    def find_anomalies(self, ref_hours, check_hours, sensitivity):
+        def get_avg_data(start_date, end_date):
+            groupper = {'_id': {'app_id': '$app_id', 'name': '$name'}}
+            for field in self.fields:
+                groupper[field] = {'$avg': '$' + field}
+            pipeline = [
+                {'$match': {'date': {'$gt': start_date, '$lt': end_date}}},
+                {'$group': groupper}
+            ]
+            raw_results = self.collection.aggregate(pipeline)['result']
+            results = {}
+            for raw_result in raw_results:
+                app_id = raw_result['_id']['app_id']
+                name = raw_result['_id']['name']
+                for field in self.fields:
+                    results[app_id, name, field] = raw_result.get(field)
+            return results
+
+        ref_end_date = datetime.utcnow() - timedelta(hours=check_hours)
+        ref_start_date = ref_end_date - timedelta(hours=ref_hours)
+        ref_data = get_avg_data(ref_start_date, ref_end_date)
+
+        check_start_date = ref_end_date
+        check_end_date = datetime.utcnow()
+        check_data = get_avg_data(check_start_date, check_end_date)
+
+        anomalies = []
+        for (app_id, name, field), ref_val in ref_data.items():
+            check_val = check_data.get((app_id, name, field), 0.0)
+            if ref_val == 0.0 and check_val > 0.0:
+                anomaly = Anomaly(app_id=app_id, name=name, field=field)
+                anomalies.append(anomaly)
+                continue
+            error = abs(ref_val - check_val) / ref_val
+            if error >= 1.0 - sensitivity:
+                anomaly = Anomaly(app_id=app_id, name=name, field=field)
+                anomalies.append(anomaly)
+        return anomalies

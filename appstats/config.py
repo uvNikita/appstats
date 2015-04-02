@@ -5,6 +5,13 @@ REDIS_DB = 0
 MONGO_URI = 'mongodb://127.0.0.1:27017'
 MONGO_DB_NAME = 'appstats'
 
+APP_EMAIL = 'appstats@mail.com'
+INFO_EMAILS = []
+
+SMTP_LOGIN = None
+SMTP_PASSWORD = None
+SMTP_SERVER = None
+
 # APPLICATIONS = (('key1', 'name1'), ('key2', 'name2'))
 APPLICATIONS = (('prom.ua', 'Prom.ua'),
                 ('tiu.ru', 'Tiu.ru'),

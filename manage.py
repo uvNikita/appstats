@@ -1,6 +1,10 @@
 # encoding: utf-8
+from email.utils import make_msgid
+from email.header import Header
+from email.mime.text import MIMEText
 
-from datetime import datetime, timedelta
+from smtplib import SMTP
+from datetime import datetime, timedelta, date
 
 from flaskext.script import Manager
 from pymongo import ASCENDING
@@ -9,7 +13,7 @@ from appstats.app import app, apps_last_hour_counter, apps_last_day_counter
 from appstats.app import tasks_last_hour_counter, tasks_last_day_counter
 from appstats.app import apps_periodic_counters, tasks_periodic_counters
 from appstats.app import apps_counters, tasks_counters
-from appstats.app import REDIS_PREFIX, redis_db, mongo_db
+from appstats.app import REDIS_PREFIX, redis_db, mongo_db, fields
 
 from appstats.util import calc_aver_data, data_to_flat_form
 
@@ -64,6 +68,7 @@ def update_counters(stats):
                                          ('name', ASCENDING),
                                          ('date', ASCENDING)],
                                         ttl=3600)
+        counter.collection.ensure_index('date')
     for counter in counters:
         counter.update()
 
@@ -96,6 +101,64 @@ def update_cache(stats):
     collection.remove()
     if docs:
         collection.insert(docs.values())
+
+
+def send_email(from_email, to_emails, content, subject):
+    login = app.config['SMTP_LOGIN']
+    password = app.config['SMTP_PASSWORD']
+    server = SMTP(app.config['SMTP_SERVER'])
+    if login:
+        server.login(login, password)
+    app.logger.info("sending '{}' to: {}".format(subject, to_emails))
+    email = MIMEText(content, 'html')
+    email['Subject'] = Header(subject)
+    email['Message-ID'] = make_msgid()
+    email['To'] = Header(to_emails[0])
+    try:
+        server.sendmail(from_email, to_emails, email.as_string())
+    except Exception as e:
+        app.logger.exception(e)
+
+
+@manager.option('-m', '--mode', dest='mode',
+                choices=['console', 'email'], default='email',
+                help='Print results to console or send email')
+@manager.option('-s', '--sensitivity', required=True,
+                help='Sensitivity of anomaly deviation. (0.0 -- 1.0)')
+@manager.option('-c', '--checkhours', required=True, dest='check_hours',
+                help='Hours to check for anomalies')
+@manager.option('-r', '--refhours', required=True, dest='ref_hours',
+                help='Reference hours used as standard')
+def find_anomalies(ref_hours, check_hours, sensitivity, mode):
+    ref_hours = int(ref_hours)
+    check_hours = int(check_hours)
+    sensitivity = float(sensitivity)
+    assert ref_hours > 0
+    assert check_hours > 0
+    assert ref_hours > check_hours
+    assert 0.0 < sensitivity < 1.0
+
+    def anomaly_text(anomaly):
+        field_name = next(f['name'] for f in fields if f['key'] == anomaly.field)
+        return '{url} ({field})'.format(url=anomaly.url, field=field_name)
+
+    counter = apps_periodic_counters[-1]
+    anomalies = counter.find_anomalies(int(ref_hours),
+                                       int(check_hours),
+                                       float(sensitivity))
+    if not anomalies:
+        return
+
+    if mode == 'console':
+        message = '\n'.join(map(anomaly_text, anomalies))
+        print message
+    else:
+        if app.config['INFO_EMAILS']:
+            message = '\n'.join(map(anomaly_text, anomalies))
+            subject = 'Appstats anomalies: {}'.format(date.today())
+            send_email(app.config['APP_EMAIL'],
+                       app.config['INFO_EMAILS'],
+                       message, subject)
 
 
 if __name__ == '__main__':
