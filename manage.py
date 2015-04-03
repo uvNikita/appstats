@@ -68,7 +68,7 @@ def update_counters(stats):
                                          ('name', ASCENDING),
                                          ('date', ASCENDING)],
                                         ttl=3600)
-        counter.collection.ensure_index('date')
+        counter.collection.ensure_index('date', ttl=3600)
     for counter in counters:
         counter.update()
 
