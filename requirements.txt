@@ -6,3 +6,4 @@ requests==0.10.8
 pymongo==2.3
 pytz==2012c
 werkzeug==0.7
+gunicorn==0.15.0
