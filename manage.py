@@ -67,8 +67,8 @@ def update_counters(stats):
         counter.collection.ensure_index([('app_id', ASCENDING),
                                          ('name', ASCENDING),
                                          ('date', ASCENDING)],
-                                        ttl=3600)
-        counter.collection.ensure_index('date', ttl=3600)
+                                        cache_for=3600)
+        counter.collection.ensure_index('date', cache_for=3600)
     for counter in counters:
         counter.update()
 
