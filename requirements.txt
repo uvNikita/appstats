@@ -3,7 +3,7 @@ Jinja2==2.6
 Flask-Script==0.3.3
 redis==2.7.0
 requests==0.10.8
-pymongo==2.3
+pymongo==2.4
 pytz==2012c
 werkzeug==0.7
 gunicorn==0.15.0

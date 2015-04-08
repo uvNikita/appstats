@@ -9,7 +9,8 @@ from collections import OrderedDict
 import redis
 from flask import abort, Blueprint, Flask, redirect
 from flask import render_template, request, url_for
-from pymongo import Connection, ASCENDING, DESCENDING
+from pymongo import MongoClient, ASCENDING, DESCENDING
+from pymongo.uri_parser import parse_uri
 from werkzeug.wsgi import ClosingIterator
 
 from .util import current_url, get_chart_info
@@ -40,8 +41,10 @@ redis_db = redis.Redis(host=app.config['REDIS_HOST'],
                        db=app.config['REDIS_DB'])
 REDIS_PREFIX = 'appstats'
 
-mongo_conn = Connection(host=app.config['MONGO_URI'], network_timeout=30,
-                        connecttimeoutms=60000, _connect=False)
+mongo_conn = MongoClient(host=app.config['MONGO_URI'], socketTimeoutMS=30000,
+                         connectTimeoutMs=60000, _connect=False)
+# Qickfix. Remove after update to pymongo >= 3.0
+mongo_conn._MongoClient__nodes = set(parse_uri(app.config['MONGO_URI'])['nodelist'])
 mongo_db = mongo_conn[app.config['MONGO_DB_NAME']]
 
 ########################### Application Counters ##############################
