@@ -364,9 +364,10 @@ class PeriodicCounter(object):
         anomalies = []
         for (app_id, name, field), ref_val in ref_data.items():
             check_val = check_data.get((app_id, name, field), 0.0)
-            if ref_val == 0.0 and check_val > 0.0:
-                anomaly = Anomaly(app_id=app_id, name=name, field=field)
-                anomalies.append(anomaly)
+            if ref_val == 0.0:
+                if check_val > 0.0:
+                    anomaly = Anomaly(app_id=app_id, name=name, field=field)
+                    anomalies.append(anomaly)
                 continue
             error = abs(ref_val - check_val) / ref_val
             if error >= 1.0 - sensitivity:
