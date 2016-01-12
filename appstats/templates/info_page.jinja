@@ -1,16 +1,19 @@
 {% extends "layout.jinja" %}
 {% block body %}
-    <span class="appstats-func-name">{{ name }}</span>
-    <form class="pull-right">
-        <span name="hours_radio" class="btn-group" data-toggle="buttons-radio" onclick="_submit()">
-            {% for def_hours in info_hours_options %}
-                <button name="hours" value="{{ def_hours }}" class="btn btn-mini btn-inverse {{ 'active' if hours == def_hours else ''}}">{{ def_hours|pretty_hours }}</button>
-            {% endfor %}
-        </span>
-    </form>
-    <div style="clear: both;"></div>
+    <div class="num-of-hours-switcher">
+        <span class="appstats-func-name">{{ name }}</span>
+        <form class="pull-right" >
+            <div class="btn-group" data-toggle="buttons">
+                {% for def_hours in info_hours_options %}
+                <label class="btn btn-primary {{ 'active' if hours == def_hours else ''}}">
+                    <input onchange="this.form.submit()" type="radio" name="hours" value="{{ def_hours }}">{{ def_hours|pretty_hours }}
+                </label>
+                {% endfor %}
+            </div>
+        </form>
+    </div>
     <div class="row">
-        <div class="span5">
+        <div class="col-md-5">
             <table class="table table-condensed">
                 <thead>
                     <th> Count </th>
@@ -53,7 +56,7 @@
                 </tbody>
             </table>
         </div>
-        <div class="span7">
+        <div class="col-md-7">
             <div style="height: 600px; margin-bottom: 10px" id="graph"></div>
         </div>
     </div>
@@ -68,14 +71,6 @@
     }
     </style>
     <script>
-        function _submit() {
-            var hours = $('button[name="hours"].active').val();
-            document.location.href="{{ current_url() }}" +
-            '?' + $.param([
-                {name : 'hours', value : hours}
-            ])
-        }
-
         function draw_graph(rate_data, timing_data, timing_labels, container_id) {
             var series = [
                 {
