@@ -10,3 +10,6 @@ tags
 .vagga
 mdb
 .ipython
+.RData
+.Rhistory
+.dbshell
