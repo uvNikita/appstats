@@ -61,12 +61,15 @@
         </div>
     </div>
     <style>
+    .highcharts-tooltip-row {
+        clear: both;
+        min-width: 130px;
+    }
     .highcharts-tooltip-name {
         float: left;
     }
     .highcharts-tooltip-value {
-        min-width: 35px;
-        margin: 0px 10px 0px 5px;
+        margin: 0px 0px 0px 5px;
         float: left;
     }
     </style>
@@ -156,12 +159,15 @@
                     backgroundColor: 'rgba(255,255,255,0.3)',
                     valueDecimals: 1,
                     pointFormat: '' +
-                        '<span class="highcharts-tooltip-name" style="color:{series.color};">' +
-                            '{series.name}: ' +
-                        '</span>' +
-                        '<div class="highcharts-tooltip-value">' +
-                            '<b>{point.y}</b>' +
+                        '<div class="highcharts-tooltip-row">' +
+                            '<span class="highcharts-tooltip-name" style="color:{series.color};">' +
+                                '{series.name}: ' +
+                            '</span>' +
+                            '<div class="highcharts-tooltip-value">' +
+                                '<b>{point.y}</b>' +
+                            '</div>' +
                         '</div>'
+
                 },
                 plotOptions: {
                     area: {
