@@ -263,15 +263,17 @@ def add_nav_list():
         def_app_name: current_url(app_id=def_app_id)
         for def_app_id, def_app_name
         in APPLICATIONS.iteritems()}
-    rates = []
-    rates.append(dict(name='Application',
-                      url=url_for('.appstats', app_id=app_id),
-                      active=(request.endpoint == 'stats_frontend.appstats' or
-                              request.endpoint == 'stats_frontend.apps_info')))
-    rates.append(dict(name='Tasks',
-                      url=url_for('.tasks', app_id=app_id),
-                      active=(request.endpoint == 'stats_frontend.tasks' or
-                              request.endpoint == 'stats_frontend.tasks_info')))
+    rates = [{
+        'name': 'Application',
+        'url': url_for('.appstats', app_id=app_id),
+        'active': (request.endpoint == 'stats_frontend.appstats' or
+                   request.endpoint == 'stats_frontend.apps_info')
+    }, {
+        'name': 'Tasks',
+        'url': url_for('.tasks', app_id=app_id),
+        'active': (request.endpoint == 'stats_frontend.tasks' or
+                   request.endpoint == 'stats_frontend.tasks_info')
+    }]
     # rates.append(dict(name='Task queue',
     #                   url='',
     #                   active=False))
@@ -289,6 +291,10 @@ def add_nav_list():
 
 @stats_bp.route('/appstats')
 def appstats(app_id):
+    anomalies_only = request.args.get('anomalies_only') == 'true'
+
+    anomalies = {ann['name'] for ann in mongo_db['anomalies'].find({'app_id': app_id})}
+
     sort_by_field = request.args.get('sort_by_field', 'NUMBER')
     if (sort_by_field not in (f['key'] for f in visible_fields)
         and sort_by_field != 'name'):
@@ -304,7 +310,11 @@ def appstats(app_id):
     if selected_field not in (f['key'] for f in visible_fields):
         abort(404)
 
-    docs = mongo_db.appstats_docs.find({'app_id': app_id})
+    query = {'app_id': app_id}
+    if anomalies_only:
+        query['name'] = {'$in': list(anomalies)}
+    docs = mongo_db.appstats_docs.find(query)
+
     if sort_by_field == 'name':
         docs = docs.sort('name')
     else:
@@ -315,7 +325,8 @@ def appstats(app_id):
     return render_template('stats.jinja', sort_by_field=sort_by_field,
                            app_id=app_id, fields=visible_fields,
                            sort_by_period=sort_by_period, docs=docs,
-                           rows_limit=rows_limit,
+                           anomalies=anomalies, rows_limit=rows_limit,
+                           anomalies_only=anomalies_only,
                            rows_limit_options=ROWS_LIMIT_OPTIONS,
                            selected_field=selected_field,
                            info_endpoint='.apps_info')
@@ -323,6 +334,10 @@ def appstats(app_id):
 
 @stats_bp.route('/tasks')
 def tasks(app_id):
+    anomalies_only = request.args.get('anomalies_only') == 'true'
+
+    anomalies = set([])
+
     sort_by_field = request.args.get('sort_by_field', 'NUMBER')
     if (sort_by_field not in (f['key'] for f in visible_fields)
         and sort_by_field != 'name'):
@@ -338,7 +353,11 @@ def tasks(app_id):
     if selected_field not in (f['key'] for f in visible_fields):
         abort(404)
 
-    docs = mongo_db.appstats_tasks_docs.find({'app_id': app_id})
+    query = {'app_id': app_id}
+    if anomalies_only:
+        query['name'] = {'$in': list(anomalies)}
+    docs = mongo_db.appstats_docs.find(query)
+
     if sort_by_field == 'name':
         docs = docs.sort('name')
     else:
@@ -349,6 +368,7 @@ def tasks(app_id):
     return render_template('stats.jinja', sort_by_field=sort_by_field,
                            app_id=app_id, fields=visible_fields,
                            sort_by_period=sort_by_period, docs=docs,
+                           anomalies=anomalies, anomalies_only=anomalies_only,
                            rows_limit=rows_limit,
                            rows_limit_options=ROWS_LIMIT_OPTIONS,
                            selected_field=selected_field,

@@ -1,15 +1,22 @@
 {% extends "layout.jinja" %}
 {% block body %}
-    <div class="btn-group pull-right num-of-lines-switcher">
-        <button class="btn btn-mini btn-inverse dropdown-toggle" data-toggle="dropdown">
-            {{ rows_limit }} rows
-            <span class="caret"></span>
-        </button>
-        <ul class="dropdown-menu">
-            {% for def_rows in rows_limit_options %}
-                <li><a href="{{ current_url(rows=def_rows) }}">{{ def_rows }}</a></li>
-            {% endfor %}
-        </ul>
+
+    <div class="row center-block">
+        <div class="btn-group pull-right num-of-lines-switcher">
+            <button class="btn btn-mini btn-inverse dropdown-toggle" data-toggle="dropdown">
+                {{ rows_limit }} rows
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+                {% for def_rows in rows_limit_options %}
+                    <li><a href="{{ current_url(rows=def_rows) }}">{{ def_rows }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        <a class="btn btn-default {{ 'active' if anomalies_only else ''}}"
+           href="{{ current_url(anomalies_only='false' if anomalies_only else 'true') }}">
+        Anomalies Only
+        </a>
     </div>
     <table class="table appstats-table table-bordered table-striped table-condensed table-hover">
         <thead>
@@ -86,6 +93,9 @@
                     <tr>
                         <td colspan="{{ fields|length + 4 }}">
                             <a href="{{ url_for(info_endpoint, name=doc['name'], app_id=app_id) }}"> {{ doc['name'] }} </a>
+                            {% if doc['name'] in anomalies %}
+                                <span class="label label-danger">Anomaly</span>
+                            {% endif %}
                         </td>
                     </tr>
                     <tr>

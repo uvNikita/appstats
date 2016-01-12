@@ -17,6 +17,16 @@ containers:
     - !Sh "mkdir -p /work/mdb"
     - !Install [mongodb-server]
 
+  r-lang:
+    setup:
+      - !Ubuntu trusty
+      - !UbuntuUniverse
+      - !AptTrust keys: [B04C661B]
+      - !UbuntuPPA marutter/rrutter
+      - !Install [r-base-core, build-essential, curl, libxml2-dev, libcurl4-gnutls-dev, libssl-dev]
+      - !Sh |
+         /usr/lib/R/bin/R --slave --no-restore --file=init.R
+
 commands:
   run: !Supervise
     children:
@@ -39,3 +49,8 @@ commands:
   shell: !Command
     container: appstats
     run: sh
+
+  anomalies: !Command
+    container: r-lang
+    accepts-arguments: true
+    run: /usr/lib/R/bin/R --slave --no-restore --file=/work/anomalies.R --args $@
