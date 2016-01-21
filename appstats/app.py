@@ -356,7 +356,7 @@ def tasks(app_id):
     query = {'app_id': app_id}
     if anomalies_only:
         query['name'] = {'$in': list(anomalies)}
-    docs = mongo_db.appstats_docs.find(query)
+    docs = mongo_db.appstats_tasks_docs.find(query)
 
     if sort_by_field == 'name':
         docs = docs.sort('name')
