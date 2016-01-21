@@ -18,7 +18,7 @@ save_anomalies <- function(mongo_host, mongo_db, app_ids) {
     mongo.remove(
         mongo,
         "appstats.anomalies",
-        mongo.bson.from.list(list(app_id=('$in'=app_ids)))
+        mongo.bson.from.list(list(app_id=list('$in'=app_ids)))
     )
     mongo.insert.batch(mongo, "appstats.anomalies", docs)
 }
