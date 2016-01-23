@@ -44,7 +44,7 @@ find_anomalies <- function(mongo, app_id) {
                     list(anoms=c())
                 })
         },
-        max_anoms=0.02, direction='pos', only_last='day', plot=FALSE
+        max_anoms=0.02, direction='pos', alpha=0.01, only_last='day', plot=FALSE
     )
 
     anomalies <- Filter(function(x) length(x$anoms) > 0, anomalies)
