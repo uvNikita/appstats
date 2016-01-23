@@ -9,7 +9,11 @@ save_anomalies <- function(mongo_host, mongo_db, app_ids) {
         anomalies <- find_anomalies(mongo, app_id)
         docs = c(docs, Map(
             function(anns, name) {
-                mongo.bson.from.list(list(name=name, anomalies=anns, app_id=app_id))
+                mongo.bson.from.list(list(
+                    name=name,
+                    anomalies=if(length(anns) > 1) anns else list(anns),
+                    app_id=app_id
+                ))
             },
             anomalies,
             names(anomalies)
