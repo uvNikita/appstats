@@ -14,7 +14,12 @@ def current_url(**updates):
     return url_for(request.endpoint, **kwargs)
 
 
-def get_chart_info(periodic_counters, time_fields, app_id, name, hours):
+def get_chart_info(periodic_counters, time_fields, app_id, name, hours, anomalies_coll=None):
+    def date_to_timestamp(date, tz=pytz.timezone('Europe/Kiev')):
+        date = date.replace(tzinfo=pytz.utc)
+        date = date.astimezone(tz)
+        return mktime(date.timetuple()) * 1000
+
     # Starting datetime of needed data
     starting_from = datetime.utcnow() - timedelta(hours=hours)
     # Choosing the most suitable, accurate counter based on given hours
@@ -30,25 +35,19 @@ def get_chart_info(periodic_counters, time_fields, app_id, name, hours):
     docs = counter.collection.find({'app_id': app_id, 'name': name,
                                     'date': {'$gt': starting_from}})
     docs = list(docs.sort('date'))
-    tz = pytz.timezone('Europe/Kiev')
     # Prepare list of rows for each time_field
     time_data = [[] for _ in time_fields]
     num_data = []
     # If docs is empty, return zero value on current datetime.
     if not docs:
-        date = datetime.utcnow().replace(tzinfo=pytz.utc)
-        date = date.astimezone(tz)
-        date = mktime(date.timetuple()) * 1000
+        date = date_to_timestamp(datetime.utcnow())
         num_data = [[date, 0]]
         time_data = [[[date, 0]]]
         return num_data, time_data
     # For each doc localize date, transform timestamp from seconds to
     # milliseconds and append list [date, value] to data
     for doc in docs:
-        date = doc['date'].replace(tzinfo=pytz.utc)
-        date = date.astimezone(tz)
-        date = mktime(date.timetuple()) * 1000
-
+        date = date_to_timestamp(doc['date'])
         if doc['NUMBER'] == 0:
             num_data.append([date, None])
             for row in time_data:
@@ -63,7 +62,17 @@ def get_chart_info(periodic_counters, time_fields, app_id, name, hours):
             key = time_field['key']
             value = doc.get(key, 0)
             time_data[i].append([date, float(value) / doc['NUMBER'] * 1000])
-    return num_data, time_data
+
+    if anomalies_coll:
+        try:
+            anomalies = next(anomalies_coll.find({'name': name, 'app_id': app_id}))
+            anomalies = anomalies['anomalies']
+        except StopIteration:
+            anomalies = []
+        anomalies_data = map(date_to_timestamp, anomalies)
+    else:
+        anomalies_data = []
+    return num_data, time_data, anomalies_data
 
 
 def calc_aver_data(data, interval):

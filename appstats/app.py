@@ -293,7 +293,7 @@ def add_nav_list():
 def appstats(app_id):
     anomalies_only = request.args.get('anomalies_only') == 'true'
 
-    anomalies = {ann['name'] for ann in mongo_db['anomalies'].find({'app_id': app_id})}
+    anomalies = {ann['name'] for ann in mongo_db.anomalies.find({'app_id': app_id})}
 
     sort_by_field = request.args.get('sort_by_field', 'NUMBER')
     if (sort_by_field not in (f['key'] for f in visible_fields)
@@ -381,8 +381,9 @@ def apps_info(app_id, name):
     if hours not in INFO_HOURS_OPTIONS:
         hours = INFO_HOURS_OPTIONS[0]
 
-    num_data, time_data = get_chart_info(apps_periodic_counters, time_fields,
-                                         app_id, name, hours)
+    num_data, time_data, anomalies_data = get_chart_info(
+        apps_periodic_counters, time_fields, app_id, name, hours, mongo_db.anomalies
+    )
 
     # Get all names from time_fields and use them as labels
     time_labels = [f['name'] for f in time_fields]
@@ -392,8 +393,8 @@ def apps_info(app_id, name):
 
     return render_template('info_page.jinja', fields=visible_fields, doc=doc,
                            info_hours_options=INFO_HOURS_OPTIONS,
-                           num_data=num_data, name=name, hours=hours,
-                           time_labels=time_labels, time_data=time_data)
+                           num_data=num_data, name=name, hours=hours, time_labels=time_labels,
+                           time_data=time_data, anomalies_data=anomalies_data)
 
 
 @stats_bp.route('/tasks/<name>')
@@ -402,8 +403,9 @@ def tasks_info(app_id, name):
     if hours not in INFO_HOURS_OPTIONS:
         hours = INFO_HOURS_OPTIONS[0]
 
-    num_data, time_data = get_chart_info(tasks_periodic_counters, time_fields,
-                                         app_id, name, hours)
+    num_data, time_data, anomalies_data = get_chart_info(
+        tasks_periodic_counters, time_fields, app_id, name, hours
+    )
 
     # Get all names from time_fields and use them as labels
     time_labels = [f['name'] for f in time_fields]
@@ -413,8 +415,8 @@ def tasks_info(app_id, name):
 
     return render_template('info_page.jinja', fields=visible_fields, doc=doc,
                            info_hours_options=INFO_HOURS_OPTIONS,
-                           num_data=num_data, name=name, hours=hours,
-                           time_labels=time_labels, time_data=time_data)
+                           num_data=num_data, name=name, hours=hours, time_labels=time_labels,
+                           time_data=time_data, anomalies_data=anomalies_data)
 
 
 app.register_blueprint(stats_bp)

@@ -74,7 +74,7 @@
     }
     </style>
     <script>
-        function draw_graph(rate_data, timing_data, timing_labels, container_id) {
+        function draw_graph(rate_data, timing_data, anomalies_data, timing_labels, container_id) {
             var series = [
                 {
                     data: rate_data,
@@ -94,6 +94,15 @@
                     stacking: 'normal',
                     yAxis: 1
                 });
+            };
+
+            var anomalies_bands = [];
+            for (var i=0; i < anomalies_data.length; i++) {
+                anomalies_bands.push({
+                    color: 'rgba(255,0,0,0.3)',
+                    from: anomalies_data[i] - 3600000, // anomalies detection system use 1 hour precision counter
+                    to: anomalies_data[i],
+                })
             }
 
             Highcharts.setOptions({
@@ -117,7 +126,8 @@
                     type: 'datetime',
                     title: {
                         text: null
-                    }
+                    },
+                    plotBands: anomalies_bands
                 },
                 yAxis: [
                     {
@@ -189,6 +199,7 @@
         $(document).ready(function() {
             draw_graph({{ num_data|json }},
                        {{ time_data|json }},
+                       {{ anomalies_data|json }},
                        {{ time_labels|safe }},
                        'graph');
         });
