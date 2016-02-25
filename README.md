@@ -19,7 +19,8 @@ For anomaly detection:
 Default settings file: `appstats/config.py`
 
 Settings files:
-    1. path from environment variable 'APPSTATS_SETTINGS'
+
+    1. path from environment variable `APPSTATS_SETTINGS`
     2. /etc/appstats.cfg
     3. ~/.appstats.cfg
 
