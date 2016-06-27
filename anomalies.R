@@ -34,13 +34,15 @@ find_anomalies <- function(mongo, app_id) {
     names(anomalies) <- top_names
     anomalies <- lapply(anomalies, load_counts_data, mongo=mongo, app_id=app_id)
 
-    # run algorithm, print all errors to stderr
+    # run algorithm, print all errors to stderr, suppress NAs errors
     anomalies <- lapply(
         anomalies,
         function(...) {
             tryCatch(AnomalyDetectionTs(...), error=
                 function(e) {
-                    write(toString(e), stderr())
+                    e_str <- toString(e)
+                    if (!grepl("Data contains non-leading NAs", e_str))
+                        write(toString(e), stderr())
                     list(anoms=c())
                 })
         },
