@@ -1,10 +1,12 @@
 containers:
   appstats:
     setup:
-    - !Alpine v3.1
+    - !Alpine v3.3
     - !Py2Requirements "requirements.txt"
+  appstats-dev:
+    setup:
+    - !Container appstats
     - !Py2Install [ipython==0.10, Werkzeug==0.11.10]
-    - !Install [py-setuptools]
   redis:
     setup:
     - !Alpine v3.1
@@ -37,17 +39,17 @@ commands:
         container: mongodb
         run: mongod --dbpath /work/mdb
       appstats: !Command
-        container: appstats
+        container: appstats-dev
         run: /usr/bin/python2 -m "werkzeug.serving" "--bind=127.0.0.1:8000" "appstats.app:app.wsgi_app"
 
   pyshell: !Command
-    container: appstats
+    container: appstats-dev
     environ:
       HOME: /work
     run: python manage.py shell
 
   shell: !Command
-    container: appstats
+    container: appstats-dev
     run: sh
 
   anomalies: !Command
