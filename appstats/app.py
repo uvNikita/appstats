@@ -31,6 +31,9 @@ try:
 except ImportError:
     logging.basicConfig(level=app.config.get('LOG_LEVEL', 'WARNING'))
 
+
+log = logging.getLogger(__name__)
+
 APPLICATIONS = OrderedDict(app.config['APPLICATIONS'])
 
 time_fields = deepcopy(app.config['TIME_FIELDS'])
@@ -153,7 +156,7 @@ app.wsgi_app = add_stats_middleware(app.wsgi_app)
 
 def add_stats(apps_stats, tasks_stats, apps_counters, tasks_counters):
     if apps_stats:
-        app.logger.debug("Adding new apps_stats: \n %s", apps_stats)
+        log.debug("Adding new apps_stats: \n %s", apps_stats)
         for app_id in apps_stats:
             for name, counts in apps_stats[app_id].iteritems():
                 if not 'NUMBER' in counts:
@@ -164,7 +167,7 @@ def add_stats(apps_stats, tasks_stats, apps_counters, tasks_counters):
                         counter.incrby(app_id, name, field, val)
 
     if tasks_stats:
-        app.logger.debug("Adding new tasks_stats: \n %s", tasks_stats)
+        log.debug("Adding new tasks_stats: \n %s", tasks_stats)
         for app_id in tasks_stats:
             for name, counts in tasks_stats[app_id].iteritems():
                 if not 'NUMBER' in counts:
@@ -217,7 +220,7 @@ def add_event_page():
         docs = [{'app_id': event['app_id'], 'title': event['title'],
                  'date': datetime.utcfromtimestamp(event['timestamp']),
                  'descr': event['descr']} for event in events]
-        app.logger.debug("Adding new events: \n %s", docs)
+        log.debug("Adding new events: \n %s", docs)
         mongo_db.appstats_events.insert(docs)
     mongo_db.appstats_events.ensure_index([('date', ASCENDING),
                                            ('app_id', ASCENDING)],
