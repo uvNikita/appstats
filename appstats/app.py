@@ -51,13 +51,13 @@ REDIS_PREFIX = 'appstats'
 
 mongo_conn = MongoClient(host=app.config['MONGO_URI'], socketTimeoutMS=30000,
                          connectTimeoutMs=60000, _connect=False)
-# Qickfix. Remove after update to pymongo >= 3.0
+# QuickFix: Remove after update to pymongo >= 3.0
 mongo_conn._MongoClient__nodes = set(parse_uri(app.config['MONGO_URI'])['nodelist'])
 mongo_db = mongo_conn[app.config['MONGO_DB_NAME']]
 
 ########################### Application Counters ##############################
 
-# Appliations statistics rolling counters
+# Applications statistics rolling counters
 apps_last_hour_counter = RollingCounter(db=redis_db, fields=fields_keys,
                                         redis_prefix=REDIS_PREFIX)
 apps_last_day_counter = RollingCounter(db=redis_db, fields=fields_keys,
@@ -65,23 +65,27 @@ apps_last_day_counter = RollingCounter(db=redis_db, fields=fields_keys,
                                        interval=86400, secs_per_part=3600)
 apps_rolling_counters = [apps_last_hour_counter, apps_last_day_counter]
 
-# Appliations statistics periodic counters
-apps_periodic_counters = []
-# Very accurate, 6 hours counter with 1 min intervals
-apps_periodic_counters.append(PeriodicCounter(
-    divider=60, redis_db=redis_db,
-    mongo_db=mongo_db, fields=fields_keys,
-    redis_prefix=REDIS_PREFIX, period=6))
-# Middle accurate, 6 days(144 hours) counter with 10 min intervals
-apps_periodic_counters.append(PeriodicCounter(
-    divider=6, redis_db=redis_db,
-    mongo_db=mongo_db, fields=fields_keys,
-    redis_prefix=REDIS_PREFIX, period=144))
-# Low accurate, half-year(182 * 24 = 4368) counter with 60 min intervals
-apps_periodic_counters.append(PeriodicCounter(
-    divider=1, redis_db=redis_db,
-    mongo_db=mongo_db, fields=fields_keys,
-    redis_prefix=REDIS_PREFIX, period=4368))
+# Applications statistics periodic counters
+apps_periodic_counters = [
+    # Very accurate, 6 hours counter with 1 min intervals
+    PeriodicCounter(
+        divider=60, redis_db=redis_db,
+        mongo_db=mongo_db, fields=fields_keys,
+        redis_prefix=REDIS_PREFIX, period=6
+    ),
+    # Middle accurate, 6 days(144 hours) counter with 10 min intervals
+    PeriodicCounter(
+        divider=6, redis_db=redis_db,
+        mongo_db=mongo_db, fields=fields_keys,
+        redis_prefix=REDIS_PREFIX, period=144
+    ),
+    # Low accurate, half-year(182 * 24 = 4368) counter with 60 min intervals
+    PeriodicCounter(
+        divider=1, redis_db=redis_db,
+        mongo_db=mongo_db, fields=fields_keys,
+        redis_prefix=REDIS_PREFIX, period=4368
+    )
+]
 apps_periodic_counters = sorted(apps_periodic_counters, key=lambda c: c.period)
 
 # All applications counters
@@ -101,22 +105,26 @@ tasks_last_day_counter = RollingCounter(db=redis_db, fields=fields_keys,
 tasks_rolling_counters = [tasks_last_hour_counter, tasks_last_day_counter]
 
 # Tasks statistics periodic counters
-tasks_periodic_counters = []
+tasks_periodic_counters = [
+    PeriodicCounter(
+        divider=60, redis_db=redis_db,
+        mongo_db=mongo_db, fields=fields_keys,
+        redis_prefix=REDIS_PREFIX, period=6, stats='tasks'
+    ),
+    PeriodicCounter(
+        divider=6, redis_db=redis_db,
+        mongo_db=mongo_db, fields=fields_keys,
+        redis_prefix=REDIS_PREFIX, period=144, stats='tasks'
+    ),
+    PeriodicCounter(
+        divider=1, redis_db=redis_db,
+        mongo_db=mongo_db, fields=fields_keys,
+        redis_prefix=REDIS_PREFIX, period=4368, stats='tasks'
+    )
+]
 # Very accurate, 6 hours counter with 1 min intervals
-tasks_periodic_counters.append(PeriodicCounter(
-    divider=60, redis_db=redis_db,
-    mongo_db=mongo_db, fields=fields_keys,
-    redis_prefix=REDIS_PREFIX, period=6, stats='tasks'))
 # Middle accurate, 6 days(144 hours) counter with 10 min intervals
-tasks_periodic_counters.append(PeriodicCounter(
-    divider=6, redis_db=redis_db,
-    mongo_db=mongo_db, fields=fields_keys,
-    redis_prefix=REDIS_PREFIX, period=144, stats='tasks'))
 # Low accurate, half-year(182 * 24 = 4368) counter with 60 min intervals
-tasks_periodic_counters.append(PeriodicCounter(
-    divider=1, redis_db=redis_db,
-    mongo_db=mongo_db, fields=fields_keys,
-    redis_prefix=REDIS_PREFIX, period=4368, stats='tasks'))
 tasks_periodic_counters = sorted(tasks_periodic_counters,
                                  key=lambda c: c.period)
 
@@ -159,7 +167,7 @@ def add_stats(apps_stats, tasks_stats, apps_counters, tasks_counters):
         log.debug("Adding new apps_stats: \n %s", apps_stats)
         for app_id in apps_stats:
             for name, counts in apps_stats[app_id].iteritems():
-                if not 'NUMBER' in counts:
+                if 'NUMBER' not in counts:
                     for counter in apps_counters:
                         counter.incrby(app_id, name, 'NUMBER', 1)
                 for field, val in counts.iteritems():
@@ -170,7 +178,7 @@ def add_stats(apps_stats, tasks_stats, apps_counters, tasks_counters):
         log.debug("Adding new tasks_stats: \n %s", tasks_stats)
         for app_id in tasks_stats:
             for name, counts in tasks_stats[app_id].iteritems():
-                if not 'NUMBER' in counts:
+                if 'NUMBER' not in counts:
                     for counter in tasks_counters:
                         counter.incrby(app_id, name, 'NUMBER', 1)
                 for field, val in counts.iteritems():
@@ -305,7 +313,7 @@ def appstats(app_id):
 
     sort_by_field = request.args.get('sort_by_field', 'NUMBER')
     if (sort_by_field not in (f['key'] for f in visible_fields)
-        and sort_by_field != 'name'):
+            and sort_by_field != 'name'):
         abort(404)
 
     sort_by_period = request.args.get('sort_by_period', 'hour')
@@ -348,7 +356,7 @@ def tasks(app_id):
 
     sort_by_field = request.args.get('sort_by_field', 'NUMBER')
     if (sort_by_field not in (f['key'] for f in visible_fields)
-        and sort_by_field != 'name'):
+            and sort_by_field != 'name'):
         abort(404)
 
     sort_by_period = request.args.get('sort_by_period', 'hour')
@@ -401,8 +409,9 @@ def apps_info(app_id, name):
 
     return render_template('info_page.jinja', fields=visible_fields, doc=doc,
                            info_hours_options=INFO_HOURS_OPTIONS,
-                           num_data=num_data, name=name, hours=hours, time_labels=time_labels,
-                           time_data=time_data, anomalies_data=anomalies_data)
+                           num_data=num_data, name=name, hours=hours,
+                           time_labels=time_labels, time_data=time_data,
+                           anomalies_data=anomalies_data)
 
 
 @stats_bp.route('/tasks/<name>')
@@ -423,8 +432,9 @@ def tasks_info(app_id, name):
 
     return render_template('info_page.jinja', fields=visible_fields, doc=doc,
                            info_hours_options=INFO_HOURS_OPTIONS,
-                           num_data=num_data, name=name, hours=hours, time_labels=time_labels,
-                           time_data=time_data, anomalies_data=anomalies_data)
+                           num_data=num_data, name=name, hours=hours,
+                           time_labels=time_labels, time_data=time_data,
+                           anomalies_data=anomalies_data)
 
 
 app.register_blueprint(stats_bp)
