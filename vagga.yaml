@@ -3,7 +3,7 @@ containers:
     setup:
     - !Alpine v3.1
     - !Py2Requirements "requirements.txt"
-    - !Py2Install [ipython==0.10]
+    - !Py2Install [ipython==0.10, Werkzeug==0.11.10]
     - !Install [py-setuptools]
   redis:
     setup:
@@ -38,7 +38,7 @@ commands:
         run: mongod --dbpath /work/mdb
       appstats: !Command
         container: appstats
-        run: gunicorn appstats.app:app.wsgi_app
+        run: /usr/bin/python2 -m "werkzeug.serving" "--bind=127.0.0.1:8000" "appstats.app:app.wsgi_app"
 
   pyshell: !Command
     container: appstats
