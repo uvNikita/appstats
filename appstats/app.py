@@ -18,13 +18,18 @@ from .counter import RollingCounter, PeriodicCounter
 from .filters import json_filter, time_filter, count_filter, default_filter
 from .filters import pretty_hours_filter
 
-logging.basicConfig()
 
 app = Flask(__name__)
 app.config.from_object('appstats.config')
 if not app.config.from_envvar('APPSTATS_SETTINGS', silent=True):
     app.config.from_pyfile('/etc/appstats.cfg', silent=True)
     app.config.from_pyfile(expanduser('~/.appstats.cfg'), silent=True)
+
+try:
+    import logevo
+    logevo.configure_logging()
+except ImportError:
+    logging.basicConfig(level=app.config.get('LOG_LEVEL', 'WARNING'))
 
 APPLICATIONS = OrderedDict(app.config['APPLICATIONS'])
 
