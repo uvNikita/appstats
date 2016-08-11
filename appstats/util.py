@@ -43,7 +43,8 @@ def get_chart_info(periodic_counters, time_fields, app_id, name, hours, anomalie
         date = date_to_timestamp(datetime.utcnow())
         num_data = [[date, 0]]
         time_data = [[[date, 0]]]
-        return num_data, time_data
+        anomalies_data = []
+        return num_data, time_data, anomalies_data
     # For each doc localize date, transform timestamp from seconds to
     # milliseconds and append list [date, value] to data
     for doc in docs:
