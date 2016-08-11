@@ -15,9 +15,8 @@ def current_url(**updates):
 
 
 def get_chart_info(periodic_counters, time_fields, app_id, name, hours, anomalies_coll=None):
-    def date_to_timestamp(date, tz=pytz.timezone('Europe/Kiev')):
+    def date_to_timestamp(date):
         date = date.replace(tzinfo=pytz.utc)
-        date = date.astimezone(tz)
         return mktime(date.timetuple()) * 1000
 
     # Starting datetime of needed data
