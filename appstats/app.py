@@ -299,7 +299,7 @@ def add_nav_list():
     # rates.append(dict(name='Tracing',
     #                   url='',
     #                   active=False))
-    nav_list = dict(name='AppStats', url=url_for('dashboard'),
+    nav_list = dict(name='AppStats(vx.x.x)', url=url_for('dashboard'),
                     rates=rates, apps_list=dict(title=app_name, apps=apps))
 
     return dict(nav_list=nav_list)
