@@ -312,17 +312,17 @@ class PeriodicCounter(object):
 
                 # For each passed interval
                 # add separate doc with the specific date
-                for offset_scale in xrange(num_intervals):
-                    offset = self.interval * offset_scale
-                    date = now - timedelta(minutes=offset)
-                    doc['date'] = date
-                    docs.append(doc.copy())
+                # for offset_scale in xrange(num_intervals):
+                #     offset = self.interval * offset_scale
+                #     date = now - timedelta(minutes=offset)
+                #     doc['date'] = date
+                #     docs.append(doc.copy())
         if docs:
             # Make MAX_MONGO_RETRIES tries to insert docs
             tries = self.MAX_MONGO_RETRIES
             while True:
                 try:
-                    self.collection.insert(docs)
+                    # self.collection.insert(docs)
                     break
                 except AutoReconnect:
                     log.warn("AutoReconnect exception while inserting "
