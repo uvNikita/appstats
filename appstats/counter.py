@@ -212,7 +212,7 @@ class PeriodicCounter(object):
     key_format = '%(prefix)s,periodic,%(divider)s,%(app_id)s,%(name)s,%(field)s'
     prev_upd_key_format = '%(prefix)s,periodic,%(divider)s,prev_upd'
     MAX_MONGO_RETRIES = 3
-    MAX_PASSED_INTERVALS = 10
+    MAX_PASSED_INTERVALS = 5
 
     def __init__(self, divider, redis_db, mongo_db, fields,
                  redis_prefix, stats='apps', period=720):
