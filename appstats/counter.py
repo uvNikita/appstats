@@ -265,7 +265,7 @@ class PeriodicCounter(object):
     def update(self):
         prev_upd_key = self._make_key(self.prev_upd_key_format)
         prev_upd = self.redis_db.get(prev_upd_key)
-        log.debug(
+        log.info(
             "Counter (collection: {collection})"
             "update was triggered, previous update: {prev}".format(
                 collection=self.collection.name, prev=prev_upd,
