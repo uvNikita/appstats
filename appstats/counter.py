@@ -212,7 +212,7 @@ class PeriodicCounter(object):
     key_format = '%(prefix)s,periodic,%(divider)s,%(app_id)s,%(name)s,%(field)s'
     prev_upd_key_format = '%(prefix)s,periodic,%(divider)s,prev_upd'
     MAX_MONGO_RETRIES = 3
-    MAX_PASSED_INTERVALS = 1
+    MAX_PASSED_INTERVALS = 10
 
     def __init__(self, divider, redis_db, mongo_db, fields,
                  redis_prefix, stats='apps', period=720):
@@ -312,17 +312,17 @@ class PeriodicCounter(object):
 
                 # For each passed interval
                 # add separate doc with the specific date
-                # for offset_scale in xrange(num_intervals):
-                #     offset = self.interval * offset_scale
-                #     date = now - timedelta(minutes=offset)
-                #     doc['date'] = date
-                #     docs.append(doc.copy())
+                for offset_scale in xrange(num_intervals):
+                    offset = self.interval * offset_scale
+                    date = now - timedelta(minutes=offset)
+                    doc['date'] = date
+                    docs.append(doc.copy())
         if docs:
             # Make MAX_MONGO_RETRIES tries to insert docs
             tries = self.MAX_MONGO_RETRIES
             while True:
                 try:
-                    # self.collection.insert(docs)
+                    self.collection.insert(docs)
                     break
                 except AutoReconnect:
                     log.warn("AutoReconnect exception while inserting "
