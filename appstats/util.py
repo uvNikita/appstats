@@ -1,10 +1,15 @@
 # encoding: utf-8
+import logging
 
-from time import mktime
+from time import mktime, time
+from functools import wraps
 from datetime import datetime, timedelta
 
 import pytz
 from flask import request, url_for
+
+
+log = logging.getLogger(__name__)
 
 
 def current_url(**updates):
@@ -128,3 +133,20 @@ def data_to_flat_form(hour_data, hour_aver_data,
                 key = '%s_%s' % (field, 'day_aver')
                 doc[key] = day_aver_data[app_id][name][field]
     return docs
+
+
+def log_time_call(func, log_level=logging.DEBUG):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time()
+        result = func(*args, **kwargs)
+        secs = time() - start_time
+        log.log(
+            log_level,
+            "'{func}(args={args}, kwargs={kwargs})' "
+            "took {secs:0.2f} secs to execute".format(
+                func=func.__name__, args=args, kwargs=kwargs, secs=secs
+            )
+        )
+        return result
+    return wrapper
