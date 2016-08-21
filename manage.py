@@ -15,8 +15,7 @@ from appstats.app import apps_periodic_counters, tasks_periodic_counters
 from appstats.app import apps_counters, tasks_counters
 from appstats.app import REDIS_PREFIX, redis_db, mongo_db, fields
 
-from appstats.util import calc_aver_data, data_to_flat_form
-
+from appstats.util import calc_aver_data, data_to_flat_form, log_time_call
 
 manager = Manager(app)
 
@@ -54,6 +53,7 @@ def clear():
 
 @manager.option('-s', '--stats', required=True, dest='stats',
                 choices=['apps', 'tasks'], help='Statistics to update')
+@log_time_call
 def update_counters(stats):
     """ Update all counters """
     if stats == 'apps':
@@ -75,6 +75,7 @@ def update_counters(stats):
 
 @manager.option('-s', '--stats', required=True, dest='stats',
                 choices=['apps', 'tasks'], help='Statistics to update')
+@log_time_call
 def update_cache(stats):
     """ Update cache """
     if stats == 'apps':
