@@ -212,7 +212,7 @@ class PeriodicCounter(object):
     key_format = '%(prefix)s,periodic,%(divider)s,%(app_id)s,%(name)s,%(field)s'
     prev_upd_key_format = '%(prefix)s,periodic,%(divider)s,prev_upd'
     MAX_MONGO_RETRIES = 3
-    MAX_PASSED_INTERVALS = 10
+    MAX_PASSED_INTERVALS = 5
 
     def __init__(self, divider, redis_db, mongo_db, fields,
                  redis_prefix, stats='apps', period=720):
@@ -325,23 +325,23 @@ class PeriodicCounter(object):
                     val = float(val) if val else 0.0
                     val_per_interval = val / passed_intervals
                     doc[field] = val_per_interval
-
-                # For each passed interval
-                # add separate doc with the specific date
-                for offset_scale in xrange(num_intervals):
-                    offset = self.interval * offset_scale
-                    date = now - timedelta(minutes=offset)
-                    doc['date'] = date
-                    docs.append(doc.copy())
         try:
             self._insert_docs(docs)
             pl.execute()
-
             prev_upd = timegm(now.utctimetuple())
             self.redis_db.set(prev_upd_key, prev_upd)
 
             oldest_date = now - timedelta(hours=self.period)
             self.collection.remove({'date': {'$lte': oldest_date}})
+
+            # For each passed interval
+            # add separate doc with changed date
+            for offset_scale in xrange(num_intervals):
+                for doc in docs:
+                    offset = self.interval * offset_scale
+                    date = now - timedelta(minutes=offset)
+                    doc['date'] = date
+                self._insert_docs(docs)
         except AutoReconnect as e:
             log.warning("Failed to update counters: {}".format(e))
             pl.reset()
