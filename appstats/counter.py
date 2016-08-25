@@ -321,7 +321,7 @@ class PeriodicCounter(object):
                                          name=name, field=field)
                     val = self.redis_db.get(key)
                     # Reduce value by val (pipelined)
-                    pl.incrby(key, -val)
+                    pl.incrbyfloat(key, -val)
                     val = float(val) if val else 0.0
                     val_per_interval = val / passed_intervals
                     doc[field] = val_per_interval
