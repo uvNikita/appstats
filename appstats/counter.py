@@ -302,9 +302,6 @@ class PeriodicCounter(object):
             # If there isn't prev_upd in redis,
             # use 'one interval before current time' variable instead
             prev_upd = now - timedelta(minutes=self.interval)
-            # Get unix utc timestamp
-            prev_upd_unix = timegm(prev_upd.utctimetuple())
-            self.redis_db.set(prev_upd_key, prev_upd_unix)
         delta = now - prev_upd
         passed_intervals = int(delta.total_seconds() / 60 / self.interval)
         if passed_intervals == 0:
@@ -314,6 +311,7 @@ class PeriodicCounter(object):
         # Quick fix for case, when many intervals have passed
         num_intervals = min(passed_intervals, self.MAX_PASSED_INTERVALS)
 
+        pl = self.redis_db.pipeline()
         docs = []
         for app_id in self._get_app_ids():
             for name in self._get_names(app_id):
@@ -322,11 +320,11 @@ class PeriodicCounter(object):
                     key = self._make_key(self.key_format, app_id=app_id,
                                          name=name, field=field)
                     val = self.redis_db.get(key)
+                    # Reduce value by val (pipelined)
+                    pl.incrby(key, -val)
                     val = float(val) if val else 0.0
                     val_per_interval = val / passed_intervals
                     doc[field] = val_per_interval
-                    # New val = 0
-                    self.redis_db.set(key, 0)
 
                 # For each passed interval
                 # add separate doc with the specific date
@@ -335,12 +333,18 @@ class PeriodicCounter(object):
                     date = now - timedelta(minutes=offset)
                     doc['date'] = date
                     docs.append(doc.copy())
+        try:
+            self._insert_docs(docs)
+            pl.execute()
 
-        self._insert_docs(docs)
-        prev_upd = timegm(now.utctimetuple())
-        self.redis_db.set(prev_upd_key, prev_upd)
-        oldest_date = now - timedelta(hours=self.period)
-        self.collection.remove({'date': {'$lte': oldest_date}})
+            prev_upd = timegm(now.utctimetuple())
+            self.redis_db.set(prev_upd_key, prev_upd)
+
+            oldest_date = now - timedelta(hours=self.period)
+            self.collection.remove({'date': {'$lte': oldest_date}})
+        except AutoReconnect as e:
+            log.warning("Failed to update counters: {}".format(e))
+            pl.reset()
 
     def find_anomalies(self, ref_hours, check_hours, sensitivity):
         def get_avg_data(start_date, end_date):
