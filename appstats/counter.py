@@ -250,6 +250,24 @@ class PeriodicCounter(object):
         kwargs.update(prefix=self.prefix, divider=self.divider)
         return key_format % kwargs
 
+    def _insert_docs(self, docs):
+        if not docs:
+            return
+        # Make MAX_MONGO_RETRIES tries to insert docs
+        tries = self.MAX_MONGO_RETRIES
+        while True:
+            try:
+                self.collection.insert(docs)
+                break
+            except AutoReconnect:
+                log.warn("AutoReconnect exception while inserting "
+                         "docs in mongo")
+                # Last try, raise exception
+                if tries <= 0:
+                    raise
+                tries -= 1
+                sleep(0.1)
+
     def incrby(self, app_id, name, field, increment):
         if ',' in name:
             raise ValueError("Name can't contain ',' (comma)")
@@ -317,26 +335,12 @@ class PeriodicCounter(object):
                     date = now - timedelta(minutes=offset)
                     doc['date'] = date
                     docs.append(doc.copy())
-        if docs:
-            # Make MAX_MONGO_RETRIES tries to insert docs
-            tries = self.MAX_MONGO_RETRIES
-            while True:
-                try:
-                    self.collection.insert(docs)
-                    break
-                except AutoReconnect:
-                    log.warn("AutoReconnect exception while inserting "
-                             "docs in mongo")
-                    # Last try, raise exception
-                    if tries <= 0:
-                        raise
-                    tries -= 1
-                    sleep(0.5)
 
-            prev_upd = timegm(now.utctimetuple())
-            self.redis_db.set(prev_upd_key, prev_upd)
-            oldest_date = now - timedelta(hours=self.period)
-            self.collection.remove({'date': {'$lte': oldest_date}})
+        self._insert_docs(docs)
+        prev_upd = timegm(now.utctimetuple())
+        self.redis_db.set(prev_upd_key, prev_upd)
+        oldest_date = now - timedelta(hours=self.period)
+        self.collection.remove({'date': {'$lte': oldest_date}})
 
     def find_anomalies(self, ref_hours, check_hours, sensitivity):
         def get_avg_data(start_date, end_date):
