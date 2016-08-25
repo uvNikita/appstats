@@ -253,6 +253,7 @@ class PeriodicCounter(object):
     def _insert_docs(self, docs):
         if not docs:
             return
+        log.debug("Going to insert {} docs in mongo".format(len(docs)))
         # Make MAX_MONGO_RETRIES tries to insert docs
         tries = self.MAX_MONGO_RETRIES
         while True:
