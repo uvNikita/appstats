@@ -338,7 +338,7 @@ class PeriodicCounter(object):
 
             # For each passed interval
             # add separate doc with changed date
-            for offset_scale in xrange(num_intervals):
+            for offset_scale in xrange(1, num_intervals):
                 for doc in docs:
                     offset = self.interval * offset_scale
                     date = now - timedelta(minutes=offset)
