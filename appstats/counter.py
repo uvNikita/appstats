@@ -326,6 +326,7 @@ class PeriodicCounter(object):
                     pl.incrbyfloat(key, -val)
                     val_per_interval = val / passed_intervals
                     doc[field] = val_per_interval
+                    docs.append(doc)
         try:
             self._insert_docs(docs)
             pl.execute()
