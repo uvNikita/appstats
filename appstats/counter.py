@@ -317,8 +317,8 @@ class PeriodicCounter(object):
         docs = []
         for app_id in self._get_app_ids():
             for name in self._get_names(app_id):
+                doc = dict(name=name, app_id=app_id, date=now)
                 for field in self.fields:
-                    doc = dict(name=name, app_id=app_id, date=now)
                     key = self._make_key(self.key_format, app_id=app_id,
                                          name=name, field=field)
                     val = self.redis_db.get(key)
@@ -326,8 +326,7 @@ class PeriodicCounter(object):
                     # Reduce value by val (pipelined)
                     pl.incrbyfloat(key, -val)
                     val_per_interval = val / passed_intervals
-                    doc[field] = val_per_interval
-                    docs.append(doc)
+                doc[field] = val_per_interval
         try:
             self._insert_docs(docs)
             pl.execute()
