@@ -91,7 +91,7 @@ class RollingCounter(object):
         period less or equal `secs_per_part` for better accuracy.
         """
         log.info(
-            "RollingCounter (interval: {interval})"
+            "RollingCounter (interval: {interval}) "
             "update was triggered".format(interval=self.interval)
         )
         pl = self.db.pipeline()
@@ -286,7 +286,7 @@ class PeriodicCounter(object):
         prev_upd_key = self._make_key(self.prev_upd_key_format)
         prev_upd = self.redis_db.get(prev_upd_key)
         log.info(
-            "PeriodicCounter (collection: {collection})"
+            "PeriodicCounter (collection: {collection}) "
             "update was triggered, previous update: {prev}".format(
                 collection=self.collection.name, prev=prev_upd,
             )
