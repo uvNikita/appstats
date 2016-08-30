@@ -139,7 +139,7 @@ class RollingCounter(object):
                         # Evaluating time correction
                         rest_time = passed_time - num_of_new_parts * self.secs_per_part
                         pl.set(updated_key, now - rest_time)
-        pl.execute()
+                pl.execute()
 
     def get_vals(self):
         """
