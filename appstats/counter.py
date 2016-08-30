@@ -90,6 +90,10 @@ class RollingCounter(object):
         This method should be called periodically (not necessarily) with
         period less or equal `secs_per_part` for better accuracy.
         """
+        log.info(
+            "RollingCounter (interval: {interval})"
+            "update was triggered".format(interval=self.interval)
+        )
         pl = self.db.pipeline()
         now = timegm(datetime.utcnow().utctimetuple())
         for app_id in self._get_app_ids():
@@ -121,10 +125,7 @@ class RollingCounter(object):
 
                         # There is no need to pop and push the same values more
                         # than self._num_of_parts times.
-                        if num_of_new_parts > self._num_of_parts:
-                            num_of_shifts = self._num_of_parts
-                        else:
-                            num_of_shifts = num_of_new_parts
+                        num_of_shifts = min(self._num_of_parts, num_of_new_parts)
 
                         # For each new part perform a shift,
                         # filling a new cell with the value per one part
@@ -285,7 +286,7 @@ class PeriodicCounter(object):
         prev_upd_key = self._make_key(self.prev_upd_key_format)
         prev_upd = self.redis_db.get(prev_upd_key)
         log.info(
-            "Counter (collection: {collection})"
+            "PeriodicCounter (collection: {collection})"
             "update was triggered, previous update: {prev}".format(
                 collection=self.collection.name, prev=prev_upd,
             )
