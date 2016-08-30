@@ -317,8 +317,8 @@ class PeriodicCounter(object):
         docs = []
         for app_id in self._get_app_ids():
             for name in self._get_names(app_id):
-                doc = dict(name=name, app_id=app_id)
                 for field in self.fields:
+                    doc = dict(name=name, app_id=app_id, date=now)
                     key = self._make_key(self.key_format, app_id=app_id,
                                          name=name, field=field)
                     val = self.redis_db.get(key)
@@ -344,6 +344,7 @@ class PeriodicCounter(object):
                     offset = self.interval * offset_scale
                     date = now - timedelta(minutes=offset)
                     doc['date'] = date
+                    del doc['_id']
                 self._insert_docs(docs)
         except AutoReconnect as e:
             log.warning("Failed to update counters: {}".format(e))
