@@ -31,6 +31,8 @@ class RollingCounter(object):
 
     last_val_key_format = '%(prefix)s,%(app_id)s,%(name)s,%(interval)s,%(secs_per_part)s,last_val,%(field)s'
     updated_key_format = '%(prefix)s,%(app_id)s,%(name)s,%(interval)s,%(secs_per_part)s,updated,%(field)s'
+    app_ids_key_format = '%(prefix)s,%(interval)s,%(secs_per_part)s,app_ids'
+    names_key_format = '%(prefix)s,%(interval)s,%(secs_per_part)s,%(app_id)s,names'
     key_format = '%(prefix)s,%(app_id)s,%(name)s,%(interval)s,%(secs_per_part)s,%(field)s'
 
     def __init__(self, db, fields, redis_prefix, stats='apps',
@@ -186,9 +188,15 @@ class RollingCounter(object):
         if field not in self.fields:
             return
 
+        pl = self.db.pipeline()
+        key_app_ids = self._make_key(self.app_ids_key_format)
+        key_names = self._make_key(self.names_key_format, app_id=app_id)
         last_val_key = self._make_key(self.last_val_key_format, app_id=app_id,
                                       name=name, field=field)
-        self.db.incrbyfloat(last_val_key, increment)
+        pl.sadd(key_app_ids, app_id)
+        pl.sadd(key_names, name)
+        pl.incrbyfloat(last_val_key, increment)
+        pl.execute()
 
 
 class PeriodicCounter(object):
@@ -212,6 +220,8 @@ class PeriodicCounter(object):
 
     key_format = '%(prefix)s,periodic,%(divider)s,%(app_id)s,%(name)s,%(field)s'
     prev_upd_key_format = '%(prefix)s,periodic,%(divider)s,prev_upd'
+    app_ids_key_format = '%(prefix)s,periodic,%(divider)s,app_ids'
+    names_key_format = '%(prefix)s,periodic,%(divider)s,%(app_id)s,names'
     MAX_MONGO_RETRIES = 3
     MAX_PASSED_INTERVALS = 5
 
@@ -278,9 +288,15 @@ class PeriodicCounter(object):
         if field not in self.fields:
             return
 
+        pl = self.redis_db.pipeline()
+        key_app_ids = self._make_key(self.app_ids_key_format)
+        key_names = self._make_key(self.names_key_format, app_id=app_id)
         key = self._make_key(self.key_format, app_id=app_id, name=name,
                              field=field)
-        self.redis_db.incrbyfloat(key, increment)
+        pl.sadd(key_app_ids, app_id)
+        pl.sadd(key_names, name)
+        pl.incrbyfloat(key, increment)
+        pl.execute()
 
     def update(self):
         prev_upd_key = self._make_key(self.prev_upd_key_format)
