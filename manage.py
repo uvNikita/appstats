@@ -1,4 +1,6 @@
 # encoding: utf-8
+import logging
+
 from email.utils import make_msgid
 from email.header import Header
 from email.mime.text import MIMEText
@@ -53,7 +55,7 @@ def clear():
 
 @manager.option('-s', '--stats', required=True, dest='stats',
                 choices=['apps', 'tasks'], help='Statistics to update')
-@log_time_call
+@log_time_call(logging.INFO)
 def update_counters(stats):
     """ Update all counters """
     if stats == 'apps':
@@ -75,7 +77,7 @@ def update_counters(stats):
 
 @manager.option('-s', '--stats', required=True, dest='stats',
                 choices=['apps', 'tasks'], help='Statistics to update')
-@log_time_call
+@log_time_call(logging.INFO)
 def update_cache(stats):
     """ Update cache """
     if stats == 'apps':

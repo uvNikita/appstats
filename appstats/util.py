@@ -135,18 +135,20 @@ def data_to_flat_form(hour_data, hour_aver_data,
     return docs
 
 
-def log_time_call(func, log_level=logging.DEBUG):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        start_time = time()
-        result = func(*args, **kwargs)
-        secs = time() - start_time
-        log.log(
-            log_level,
-            "'{func}(args={args}, kwargs={kwargs})' "
-            "took {secs:0.2f} secs to execute".format(
-                func=func.__name__, args=args, kwargs=kwargs, secs=secs
+def log_time_call(log_level=logging.DEBUG):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            start_time = time()
+            result = func(*args, **kwargs)
+            secs = time() - start_time
+            log.log(
+                log_level,
+                "'{func}(args={args}, kwargs={kwargs})' "
+                "took {secs:0.2f} secs to execute".format(
+                    func=func.__name__, args=args, kwargs=kwargs, secs=secs
+                )
             )
-        )
-        return result
-    return wrapper
+            return result
+        return wrapper
+    return decorator
