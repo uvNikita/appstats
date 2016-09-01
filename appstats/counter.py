@@ -28,6 +28,7 @@ class RollingCounter(object):
       - 'secs_per_part' -- accuracy indicator, determine the time range of
       one part in seconds
     """
+    REDIS_BUCKET_SIZE = 10000
 
     last_val_key_format = '%(prefix)s,%(app_id)s,%(name)s,%(interval)s,%(secs_per_part)s,last_val,%(field)s'
     updated_key_format = '%(prefix)s,%(app_id)s,%(name)s,%(interval)s,%(secs_per_part)s,updated,%(field)s'
@@ -141,7 +142,8 @@ class RollingCounter(object):
                         # Evaluating time correction
                         rest_time = passed_time - num_of_new_parts * self.secs_per_part
                         pl.set(updated_key, now - rest_time)
-                pl.execute()
+                    if len(pl) > self.REDIS_BUCKET_SIZE:
+                        pl.execute()
 
     def get_vals(self):
         """
