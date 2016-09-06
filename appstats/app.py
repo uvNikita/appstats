@@ -135,7 +135,7 @@ tasks_counters = tasks_rolling_counters + tasks_periodic_counters
 
 
 ROWS_LIMIT_OPTIONS = [10, 25, 50]
-INFO_HOURS_OPTIONS = [6, 12, 24, 144, 720]
+INFO_HOURS_OPTIONS = [6, 12, 24, 144, 720, 1440]
 
 
 app.jinja_env.filters['json'] = json_filter
