@@ -90,7 +90,7 @@ def update_cache(stats):
         last_day_counter = tasks_last_day_counter
     # Ensuring indexes
     collection.ensure_index([('app_id', ASCENDING), ('name', ASCENDING)],
-                            ttl=3600)
+                            cache_for=3600)
 
     hour_data = last_hour_counter.get_vals()
     day_data = last_day_counter.get_vals()

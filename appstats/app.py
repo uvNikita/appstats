@@ -50,9 +50,7 @@ redis_db = redis.Redis(host=app.config['REDIS_HOST'],
 REDIS_PREFIX = 'appstats'
 
 mongo_conn = MongoClient(host=app.config['MONGO_URI'], socketTimeoutMS=30000,
-                         connectTimeoutMs=60000, _connect=False)
-# QuickFix: Remove after update to pymongo >= 3.0
-mongo_conn._MongoClient__nodes = set(parse_uri(app.config['MONGO_URI'])['nodelist'])
+                         connectTimeoutMs=60000, connect=False)
 mongo_db = mongo_conn[app.config['MONGO_DB_NAME']]
 
 ########################### Application Counters ##############################
