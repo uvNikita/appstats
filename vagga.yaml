@@ -14,10 +14,19 @@ containers:
 
   mongodb:
     setup:
-    - !Ubuntu trusty
+    - !Ubuntu xenial
     - !UbuntuUniverse
+    # - !UbuntuRepo
+    #   url: http://repo.mongodb.org/apt/ubuntu
+    #   suite: xenial/mongodb-org/3.2
+    #   components: [multiverse]
+    - !AptTrust keys: [EA312927]
     - !Sh "mkdir -p /work/mdb"
-    - !Install [mongodb-server]
+    - !Sh |
+       echo 'deb http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.2 multiverse' |
+       tee /etc/apt/sources.list.d/mongodb-org-3.2.list &&
+       apt-get update
+    - !Install [mongodb-org=3.2.9]
 
   r-lang:
     setup:
