@@ -4,13 +4,28 @@ import logging
 from time import sleep
 from calendar import timegm
 from datetime import datetime, timedelta, time
+from functools import wraps
 
 from pymongo.errors import AutoReconnect
 
+from .util import lock
 from .anomaly import Anomaly
 
 
 log = logging.getLogger(__name__)
+
+
+def with_rolling_counter_lock(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        key = self._make_key(self.lock_key_format)
+        with lock(self.db, key, self.MAX_UPDATE_TIME) as acquired:
+            if acquired:
+                return func(self, *args, **kwargs)
+            else:
+                log.warning("Key '{}' is acquired, exiting".format(key))
+                return
+    return wrapper
 
 
 class RollingCounter(object):
@@ -35,6 +50,9 @@ class RollingCounter(object):
     app_ids_key_format = '%(prefix)s,%(interval)s,%(secs_per_part)s,app_ids'
     names_key_format = '%(prefix)s,%(interval)s,%(secs_per_part)s,%(app_id)s,names'
     key_format = '%(prefix)s,%(app_id)s,%(name)s,%(interval)s,%(secs_per_part)s,%(field)s'
+    lock_key_format = '%(prefix)s,%(interval)s,%(secs_per_part)s,lock'
+
+    MAX_UPDATE_TIME = 5 * 60  # 5 minutes
 
     def __init__(self, db, fields, redis_prefix, stats='apps',
                  interval=3600, secs_per_part=60):
@@ -87,6 +105,7 @@ class RollingCounter(object):
             names.add(name)
         return names
 
+    @with_rolling_counter_lock
     def update(self):
         """
         Actualize counter statistics.
@@ -201,6 +220,19 @@ class RollingCounter(object):
         pl.execute()
 
 
+def with_periodic_counter_lock(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        key = self._make_key(self.lock_key_format)
+        with lock(self.redis_db, key, self.MAX_UPDATE_TIME) as acquired:
+            if acquired:
+                return func(self, *args, **kwargs)
+            else:
+                log.warning("Key '{}' is acquired, exiting".format(key))
+                return
+    return wrapper
+
+
 class PeriodicCounter(object):
     """
     The PeriodicCounter stores data, accumulated during strict intervals.
@@ -224,8 +256,11 @@ class PeriodicCounter(object):
     prev_upd_key_format = '%(prefix)s,periodic,%(divider)s,prev_upd'
     app_ids_key_format = '%(prefix)s,periodic,%(divider)s,app_ids'
     names_key_format = '%(prefix)s,periodic,%(divider)s,%(app_id)s,names'
+    lock_key_format = '%(prefix)s,periodic,%(divider)s,lock'
+
     MAX_MONGO_RETRIES = 3
     MAX_PASSED_INTERVALS = 5
+    MAX_UPDATE_TIME = 5 * 60  # 5 minutes
 
     def __init__(self, divider, redis_db, mongo_db, fields,
                  redis_prefix, stats='apps', period=720):
@@ -300,6 +335,7 @@ class PeriodicCounter(object):
         pl.incrbyfloat(key, increment)
         pl.execute()
 
+    @with_periodic_counter_lock
     def update(self):
         prev_upd_key = self._make_key(self.prev_upd_key_format)
         prev_upd = self.redis_db.get(prev_upd_key)

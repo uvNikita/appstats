@@ -1,5 +1,6 @@
 # encoding: utf-8
 import logging
+from contextlib import contextmanager
 
 from time import mktime, time
 from functools import wraps
@@ -152,3 +153,14 @@ def log_time_call(log_level=logging.DEBUG):
             return result
         return wrapper
     return decorator
+
+
+@contextmanager
+def lock(redis, name, timeout=None):
+    key = 'lock-%s' % name
+    acquired = redis.set(key, '1', nx=True, ex=timeout)
+    try:
+        yield acquired
+    finally:
+        if acquired:
+            redis.delete(key)
