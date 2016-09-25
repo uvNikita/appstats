@@ -1,6 +1,6 @@
 library(rmongodb)
 library(AnomalyDetection)
-
+library(zoo)
 
 save_anomalies <- function(mongo_host, mongo_db, app_ids) {
     mongo <- mongo.create(host=mongo_host, db=mongo_db)
@@ -33,16 +33,17 @@ find_anomalies <- function(mongo, app_id) {
     anomalies <- as.list(top_names)
     names(anomalies) <- top_names
     anomalies <- lapply(anomalies, load_counts_data, mongo=mongo, app_id=app_id)
+    anomalies <- lapply(anomalies, na.approx, na.rm="FALSE")
+    anomalies <- lapply(anomalies, data.frame)
 
-    # run algorithm, print all errors to stderr, suppress NAs errors
+    # run algorithm, print all errors to stderr
     anomalies <- lapply(
         anomalies,
         function(...) {
             tryCatch(AnomalyDetectionTs(...), error=
                 function(e) {
                     e_str <- toString(e)
-                    if (!grepl("Data contains non-leading NAs", e_str))
-                        write(toString(e), stderr())
+                    write(toString(e), stderr())
                     list(anoms=c())
                 })
         },
