@@ -66,3 +66,8 @@ commands:
     container: r-lang
     accepts-arguments: true
     run: /usr/lib/R/bin/R --slave --no-restore --file=/work/anomalies.R --args $@
+
+  r-shell: !Command
+    container: r-lang
+    accepts-arguments: true
+    run: /usr/lib/R/bin/R --no-restore
