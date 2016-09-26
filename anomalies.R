@@ -24,7 +24,7 @@ save_anomalies <- function(mongo_host, mongo_db, app_ids) {
         "appstats.anomalies",
         mongo.bson.from.list(list(app_id=list('$in'=app_ids)))
     )
-    if (length(anomalies) > 0) {
+    if (length(docs) > 0) {
         mongo.insert.batch(mongo, "appstats.anomalies", docs)
     }
 }
