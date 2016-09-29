@@ -35,7 +35,7 @@ find_anomalies <- function(mongo, app_id) {
     anomalies <- as.list(top_names)
     names(anomalies) <- top_names
     anomalies <- lapply(anomalies, load_counts_data, mongo=mongo, app_id=app_id)
-    anomalies <- lapply(anomalies, na.approx, na.rm="FALSE")
+    anomalies <- lapply(anomalies, na.approx, na.rm=FALSE)
     anomalies <- lapply(anomalies, data.frame)
 
     # run algorithm, print all errors to stderr
@@ -90,9 +90,17 @@ load_counts_data <- function(name, mongo, app_id) {
     while (mongo.cursor.next(res)){
         row <- mongo.bson.to.list(mongo.cursor.value(res))
         out$timestamp <- c(out$timestamp, row$date)
-        out$count <- c(out$count, row$real_time / row$NUMBER)
+        out$count <- c(
+            out$count,
+            if(is.double(row$real_time) &&
+               is.double(row$NUMBER) &&
+               row$real_time > 0 &&
+               row$NUMBER > 0)
+                row$real_time / row$NUMBER
+            else
+                NA
+        )
     }
-
     return(data.frame(out))
 }
 
