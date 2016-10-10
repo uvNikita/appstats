@@ -6,11 +6,10 @@ from operator import itemgetter
 from datetime import datetime
 from collections import OrderedDict
 
-import redis
+from redis import StrictRedis
 from flask import abort, Blueprint, Flask, redirect
 from flask import render_template, request, url_for
 from pymongo import MongoClient, ASCENDING, DESCENDING
-from pymongo.uri_parser import parse_uri
 from werkzeug.wsgi import ClosingIterator
 
 from .util import current_url, get_chart_info
@@ -44,7 +43,7 @@ if 'NUMBER' not in [field['key'] for field in fields]:
 fields_keys = [field['key'] for field in fields]
 visible_fields = filter(itemgetter('visible'), fields)
 
-redis_db = redis.Redis(host=app.config['REDIS_HOST'],
+redis_db = StrictRedis(host=app.config['REDIS_HOST'],
                        port=app.config['REDIS_PORT'],
                        db=app.config['REDIS_DB'])
 REDIS_PREFIX = 'appstats'
