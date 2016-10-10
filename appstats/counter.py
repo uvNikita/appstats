@@ -170,8 +170,8 @@ class RollingCounter(object):
             {'app_id1': {'name1': {'field1': 1, 'field2': 2}}}
         """
         pl = self.db.pipeline()
-        app_id_names = {app_id: self._get_names(app_id)
-                        for app_id in self._get_app_ids()}
+        app_id_names = {app_id: list(self._get_names(app_id))
+                        for app_id in list(self._get_app_ids())}
         for app_id, names in app_id_names.iteritems():
             for name in names:
                 for field in self.fields:
