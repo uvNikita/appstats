@@ -47,8 +47,8 @@ class RollingCounter(object):
 
     last_val_key_format = '%(prefix)s,%(app_id)s,%(name)s,%(interval)s,%(secs_per_part)s,last_val,%(field)s'
     updated_key_format = '%(prefix)s,%(app_id)s,%(name)s,%(interval)s,%(secs_per_part)s,updated,%(field)s'
-    app_ids_key_format = '%(prefix)s,%(interval)s,%(secs_per_part)s,app_ids'
-    names_key_format = '%(prefix)s,%(interval)s,%(secs_per_part)s,%(app_id)s,names'
+    app_ids_key_format = '%(prefix)s,%(interval)s,%(secs_per_part)s,app_ids_set'
+    names_key_format = '%(prefix)s,%(interval)s,%(secs_per_part)s,%(app_id)s,names_set'
     key_format = '%(prefix)s,%(app_id)s,%(name)s,%(interval)s,%(secs_per_part)s,%(field)s'
     lock_key_format = '%(prefix)s,%(interval)s,%(secs_per_part)s,lock'
 
@@ -88,6 +88,9 @@ class RollingCounter(object):
              suffix, field) = key.split(',')
             app_ids.add(app_id)
         return app_ids
+        # key_app_ids = self._make_key(self.app_ids_key_format)
+        # for app_id, _ in self.db.zscan_iter(key_app_ids):
+        #     yield app_id
 
     def _get_names(self, app_id):
         """
@@ -104,6 +107,23 @@ class RollingCounter(object):
              suffix, field) = key.split(',')
             names.add(name)
         return names
+        # key_names = self._make_key(self.names_key_format, app_id=app_id)
+        # for name, _ in self.db.zscan_iter(key_names):
+        #     yield name
+
+    def _remove_old_app_ids(self, latest):
+        # enable when app_ids set will fill
+        return
+        latest_ts = timegm(latest.utctimetuple())
+        key_app_ids = self._make_key(self.app_ids_key_format)
+        self.db.zremrangebyscore(key_app_ids, 0, latest_ts)
+
+    def _remove_old_names(self, app_id, latest):
+        # enable when names set will fill
+        return
+        latest_ts = timegm(latest.utctimetuple())
+        key_names = self._make_key(self.names_key_format, app_id=app_id)
+        self.db.zremrangebyscore(key_names, 0, latest_ts)
 
     @with_rolling_counter_lock
     def update(self):
@@ -116,9 +136,14 @@ class RollingCounter(object):
             "RollingCounter (interval: {interval}) "
             "update was triggered".format(interval=self.interval)
         )
+        now_dt = datetime.utcnow()
+        now_ts = timegm(now_dt.utctimetuple())
+        latest = now_dt - timedelta(days=10)
+
+        self._remove_old_app_ids(latest)
         pl = self.db.pipeline()
-        now = timegm(datetime.utcnow().utctimetuple())
         for app_id in self._get_app_ids():
+            self._remove_old_names(app_id, latest)
             for name in self._get_names(app_id):
                 for field in self.fields:
                     key = self._make_key(self.key_format, name=name,
@@ -133,11 +158,11 @@ class RollingCounter(object):
                     if self.db.llen(key) == 0:
                         for i in xrange(self._num_of_parts - 1):
                             self.db.rpush(key, 0)
-                        self.db.set(updated_key, now)
+                        self.db.set(updated_key, now_ts)
 
                     updated = float(self.db.get(updated_key))
                     last_val = float(self.db.get(last_val_key) or '0.0')
-                    passed_time = now - updated
+                    passed_time = now_ts - updated
 
                     # Check whether it is need to be updated
                     if passed_time > self.secs_per_part:
@@ -160,7 +185,7 @@ class RollingCounter(object):
 
                         # Evaluating time correction
                         rest_time = passed_time - num_of_new_parts * self.secs_per_part
-                        pl.set(updated_key, now - rest_time)
+                        pl.set(updated_key, now_ts - rest_time)
                     if len(pl) > self.REDIS_BUCKET_SIZE:
                         pl.execute()
 
@@ -214,8 +239,9 @@ class RollingCounter(object):
         key_names = self._make_key(self.names_key_format, app_id=app_id)
         last_val_key = self._make_key(self.last_val_key_format, app_id=app_id,
                                       name=name, field=field)
-        pl.sadd(key_app_ids, app_id)
-        pl.sadd(key_names, name)
+        now = timegm(datetime.utcnow().utctimetuple())
+        pl.zadd(key_app_ids, now, app_id)
+        pl.zadd(key_names, now, name)
         pl.incrbyfloat(last_val_key, increment)
         pl.execute()
 
@@ -254,8 +280,8 @@ class PeriodicCounter(object):
 
     key_format = '%(prefix)s,periodic,%(divider)s,%(app_id)s,%(name)s,%(field)s'
     prev_upd_key_format = '%(prefix)s,periodic,%(divider)s,prev_upd'
-    app_ids_key_format = '%(prefix)s,periodic,%(divider)s,app_ids'
-    names_key_format = '%(prefix)s,periodic,%(divider)s,%(app_id)s,names'
+    app_ids_key_format = '%(prefix)s,periodic,%(divider)s,app_ids_set'
+    names_key_format = '%(prefix)s,periodic,%(divider)s,%(app_id)s,names_set'
     lock_key_format = '%(prefix)s,periodic,%(divider)s,lock'
 
     MAX_MONGO_RETRIES = 3
@@ -282,6 +308,9 @@ class PeriodicCounter(object):
             prefix, periodic, divider, app_id, name, field = key.split(',')
             app_ids.add(app_id)
         return app_ids
+        # key_app_ids = self._make_key(self.app_ids_key_format)
+        # for app_id, _ in self.redis_db.zscan_iter(key_app_ids):
+        #     yield app_id
 
     def _get_names(self, app_id):
         names = set()
@@ -293,6 +322,9 @@ class PeriodicCounter(object):
             prefix, periodic, divider, app_id, name, field = key.split(',')
             names.add(name)
         return names
+        # key_names = self._make_key(self.names_key_format, app_id=app_id)
+        # for name, _ in self.redis_db.zscan_iter(key_names):
+        #     yield name
 
     def _make_key(self, key_format, **kwargs):
         kwargs.update(prefix=self.prefix, divider=self.divider)
@@ -330,10 +362,26 @@ class PeriodicCounter(object):
         key_names = self._make_key(self.names_key_format, app_id=app_id)
         key = self._make_key(self.key_format, app_id=app_id, name=name,
                              field=field)
-        pl.sadd(key_app_ids, app_id)
-        pl.sadd(key_names, name)
+
+        now = timegm(datetime.utcnow().utctimetuple())
+        pl.zadd(key_app_ids, now, app_id)
+        pl.zadd(key_names, now, name)
         pl.incrbyfloat(key, increment)
         pl.execute()
+
+    def _remove_old_app_ids(self, latest):
+        # enable when app_ids set will fill
+        return
+        latest_ts = timegm(latest.utctimetuple())
+        key_app_ids = self._make_key(self.app_ids_key_format)
+        self.redis_db.zremrangebyscore(key_app_ids, 0, latest_ts)
+
+    def _remove_old_names(self, app_id, latest):
+        # enable when names set will fill
+        return
+        latest_ts = timegm(latest.utctimetuple())
+        key_names = self._make_key(self.names_key_format, app_id=app_id)
+        self.redis_db.zremrangebyscore(key_names, 0, latest_ts)
 
     @with_periodic_counter_lock
     def update(self):
@@ -369,7 +417,11 @@ class PeriodicCounter(object):
 
         pl = self.redis_db.pipeline()
         docs = []
+        latest = now - timedelta(days=10)
+
+        self._remove_old_app_ids(latest)
         for app_id in self._get_app_ids():
+            self._remove_old_names(app_id, latest)
             for name in self._get_names(app_id):
                 doc = dict(name=name, app_id=app_id, date=now)
                 for field in self.fields:
