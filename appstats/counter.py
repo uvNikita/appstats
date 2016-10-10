@@ -77,50 +77,24 @@ class RollingCounter(object):
         """
         Return all app_ids this counter works with.
         """
-        app_ids = set()
-        search_key = self._make_key(self.last_val_key_format, app_id='*',
-                                    name='*', field='*')
-        for key in self.db.keys(search_key):
-            # Example key format:
-            # appstats,prom.ua,path.to.module:Class.method,3600,60,last_val,CPU
-            (prefix, app_id, name,
-             interval, secs_per_part,
-             suffix, field) = key.split(',')
-            app_ids.add(app_id)
-        return app_ids
-        # key_app_ids = self._make_key(self.app_ids_key_format)
-        # for app_id, _ in self.db.zscan_iter(key_app_ids):
-        #     yield app_id
+        key_app_ids = self._make_key(self.app_ids_key_format)
+        for app_id, _ in self.db.zscan_iter(key_app_ids):
+            yield app_id
 
     def _get_names(self, app_id):
         """
         Return all names this counter watching over.
         """
-        names = set()
-        search_key = self._make_key(self.last_val_key_format, app_id=app_id,
-                                    name='*', field='*')
-        for key in self.db.keys(search_key):
-            # Example key format:
-            # appstats,prom.ua,path.to.module:Class.method,3600,60,last_val,CPU
-            (prefix, app_id, name,
-             interval, secs_per_part,
-             suffix, field) = key.split(',')
-            names.add(name)
-        return names
-        # key_names = self._make_key(self.names_key_format, app_id=app_id)
-        # for name, _ in self.db.zscan_iter(key_names):
-        #     yield name
+        key_names = self._make_key(self.names_key_format, app_id=app_id)
+        for name, _ in self.db.zscan_iter(key_names):
+            yield name
 
     def _remove_old_app_ids(self, latest):
-        # enable when app_ids set will fill
-        return
         latest_ts = timegm(latest.utctimetuple())
         key_app_ids = self._make_key(self.app_ids_key_format)
         self.db.zremrangebyscore(key_app_ids, 0, latest_ts)
 
     def _remove_old_names(self, app_id, latest):
-        # enable when names set will fill
-        return
         latest_ts = timegm(latest.utctimetuple())
         key_names = self._make_key(self.names_key_format, app_id=app_id)
         self.db.zremrangebyscore(key_names, 0, latest_ts)
@@ -299,32 +273,14 @@ class PeriodicCounter(object):
         self.interval = 60 / divider
 
     def _get_app_ids(self):
-        app_ids = set()
-        search_key = self._make_key(self.key_format, app_id='*',
-                                    name='*', field='*')
-        for key in self.redis_db.keys(search_key):
-            # Example key format:
-            # appstats,periodic,6,prom.ua,path.to.module:Class.method,CPU
-            prefix, periodic, divider, app_id, name, field = key.split(',')
-            app_ids.add(app_id)
-        return app_ids
-        # key_app_ids = self._make_key(self.app_ids_key_format)
-        # for app_id, _ in self.redis_db.zscan_iter(key_app_ids):
-        #     yield app_id
+        key_app_ids = self._make_key(self.app_ids_key_format)
+        for app_id, _ in self.redis_db.zscan_iter(key_app_ids):
+            yield app_id
 
     def _get_names(self, app_id):
-        names = set()
-        search_key = self._make_key(self.key_format, name='*', app_id=app_id,
-                                    field='*')
-        for key in self.redis_db.keys(search_key):
-            # Example key format:
-            # appstats,periodic,6,prom.ua,path.to.module:Class.method,CPU
-            prefix, periodic, divider, app_id, name, field = key.split(',')
-            names.add(name)
-        return names
-        # key_names = self._make_key(self.names_key_format, app_id=app_id)
-        # for name, _ in self.redis_db.zscan_iter(key_names):
-        #     yield name
+        key_names = self._make_key(self.names_key_format, app_id=app_id)
+        for name, _ in self.redis_db.zscan_iter(key_names):
+            yield name
 
     def _make_key(self, key_format, **kwargs):
         kwargs.update(prefix=self.prefix, divider=self.divider)
@@ -370,15 +326,11 @@ class PeriodicCounter(object):
         pl.execute()
 
     def _remove_old_app_ids(self, latest):
-        # enable when app_ids set will fill
-        return
         latest_ts = timegm(latest.utctimetuple())
         key_app_ids = self._make_key(self.app_ids_key_format)
         self.redis_db.zremrangebyscore(key_app_ids, 0, latest_ts)
 
     def _remove_old_names(self, app_id, latest):
-        # enable when names set will fill
-        return
         latest_ts = timegm(latest.utctimetuple())
         key_names = self._make_key(self.names_key_format, app_id=app_id)
         self.redis_db.zremrangebyscore(key_names, 0, latest_ts)
