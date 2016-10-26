@@ -6,3 +6,4 @@ requests==0.10.8
 pymongo==3.3.0
 pytz==2012c
 werkzeug==0.7
+cantal==0.2.0

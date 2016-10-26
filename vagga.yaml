@@ -4,6 +4,9 @@ containers:
     - !Alpine v3.3
     - !Py2Requirements "requirements.txt"
   appstats-dev:
+    environ:
+      CANTAL_PATH: /tmp/appstats.metrics
+      CANTAL_APPNAME: appstats
     setup:
     - !Container appstats
     - !Py2Install [ipython==0.10, Werkzeug==0.11.10]
