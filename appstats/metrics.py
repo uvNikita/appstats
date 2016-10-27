@@ -48,7 +48,6 @@ def patch_mongo(mongo):
 
     @wraps(real_func)
     def execute_with_metrics(*args, **options):
-        print '#' * 100
         with appflow.mongo.context():
             return real_func(*args, **options)
 
