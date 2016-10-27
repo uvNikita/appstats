@@ -61,6 +61,14 @@ commands:
       HOME: /work
     run: python manage.py shell
 
+  manage: !Command
+    container: appstats-dev
+    environ:
+      HOME: /work
+    run:
+      - python
+      - manage.py
+
   shell: !Command
     container: appstats-dev
     run: sh

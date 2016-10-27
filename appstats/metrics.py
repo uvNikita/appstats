@@ -12,9 +12,7 @@ def request_tracking_middleware(wsgi_app):
     def middleware(environ, start_response):
         method = environ['REQUEST_METHOD']
         if method == 'POST':
-            with (requests.request(),
-                  post.request(),
-                  adding_stats_flow.context()):
+            with requests.request(), post.request(), adding_stats_flow.context():
                 adding_stats_flow.app.enter()
                 return wsgi_app(environ, start_response)
         else:
