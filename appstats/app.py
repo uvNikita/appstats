@@ -8,22 +8,30 @@ from collections import OrderedDict
 
 import cantal
 
-from redis import StrictRedis
+from redis.client import StrictRedis, StrictPipeline
 from flask import abort, Blueprint, Flask, redirect
 from flask import render_template, request, url_for
 from pymongo import MongoClient, ASCENDING, DESCENDING
 from werkzeug.wsgi import ClosingIterator
+from cantal_tools.flask import FlaskMixin
 
 from .util import current_url, get_chart_info
 from .counter import RollingCounter, PeriodicCounter
 from .filters import json_filter, time_filter, count_filter, default_filter
 from .filters import pretty_hours_filter
-from .metrics import request_tracking_middleware, request_flow
+from .metrics import request_tracking_middleware, patch_redis, patch_mongo
 
+
+patch_redis(StrictRedis, StrictPipeline)
+patch_mongo(MongoClient)
 cantal.start()
 
 
-app = Flask(__name__)
+class App(FlaskMixin, Flask):
+    pass
+
+
+app = App(__name__)
 app.wsgi_app = request_tracking_middleware(app.wsgi_app)
 app.config.from_object('appstats.config')
 if not app.config.from_envvar('APPSTATS_SETTINGS', silent=True):
@@ -312,10 +320,8 @@ def add_nav_list():
 def appstats(app_id):
     anomalies_only = request.args.get('anomalies_only') == 'true'
 
-    request_flow.mongo.enter()
     anomalies = {ann['name'] for ann in mongo_db.anomalies.find({'app_id': app_id})}
 
-    request_flow.app.enter()
     sort_by_field = request.args.get('sort_by_field', 'NUMBER')
     if (sort_by_field not in (f['key'] for f in visible_fields)
             and sort_by_field != 'name'):
@@ -341,10 +347,8 @@ def appstats(app_id):
     else:
         sort_by = '%s_%s' % (sort_by_field, sort_by_period)
         docs = docs.sort(sort_by, DESCENDING)
-    request_flow.mongo.enter()
     docs = list(docs.limit(rows_limit))
 
-    request_flow.app.enter()
     return render_template('stats.jinja', sort_by_field=sort_by_field,
                            app_id=app_id, fields=visible_fields,
                            sort_by_period=sort_by_period, docs=docs,
@@ -386,10 +390,8 @@ def tasks(app_id):
     else:
         sort_by = '%s_%s' % (sort_by_field, sort_by_period)
         docs = docs.sort(sort_by, DESCENDING)
-    request_flow.mongo.enter()
     docs = list(docs.limit(rows_limit))
 
-    request_flow.app.enter()
     return render_template('stats.jinja', sort_by_field=sort_by_field,
                            app_id=app_id, fields=visible_fields,
                            sort_by_period=sort_by_period, docs=docs,
@@ -409,15 +411,12 @@ def apps_info(app_id, name):
     num_data, time_data, anomalies_data = get_chart_info(
         apps_periodic_counters, time_fields, app_id, name, hours, mongo_db.anomalies
     )
-    request_flow.app.enter()
 
     # Get all names from time_fields and use them as labels
     time_labels = [f['name'] for f in time_fields]
 
-    request_flow.mongo.enter()
     doc = mongo_db.appstats_docs.find_one(
         {'app_id': app_id, 'name': name}) or {}
-    request_flow.app.enter()
 
     return render_template('info_page.jinja', fields=visible_fields, doc=doc,
                            info_hours_options=INFO_HOURS_OPTIONS,
@@ -435,16 +434,13 @@ def tasks_info(app_id, name):
     num_data, time_data, anomalies_data = get_chart_info(
         tasks_periodic_counters, time_fields, app_id, name, hours
     )
-    request_flow.app.enter()
 
     # Get all names from time_fields and use them as labels
     time_labels = [f['name'] for f in time_fields]
 
-    request_flow.mongo.enter()
     doc = mongo_db.appstats_tasks_docs.find_one(
         {'app_id': app_id, 'name': name}) or {}
 
-    request_flow.app.enter()
     return render_template('info_page.jinja', fields=visible_fields, doc=doc,
                            info_hours_options=INFO_HOURS_OPTIONS,
                            num_data=num_data, name=name, hours=hours,

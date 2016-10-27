@@ -9,8 +9,6 @@ from datetime import datetime, timedelta
 import pytz
 from flask import request, url_for
 
-from .metrics import request_flow
-
 
 log = logging.getLogger(__name__)
 
@@ -41,9 +39,7 @@ def get_chart_info(periodic_counters, time_fields, app_id, name, hours, anomalie
         counter = periodic_counters[-1]
     docs = counter.collection.find({'app_id': app_id, 'name': name,
                                     'date': {'$gt': starting_from}})
-    request_flow.mongo.enter()
     docs = list(docs.sort('date'))
-    request_flow.app.enter()
     # Prepare list of rows for each time_field
     time_data = [[] for _ in time_fields]
     num_data = []
@@ -75,7 +71,6 @@ def get_chart_info(periodic_counters, time_fields, app_id, name, hours, anomalie
 
     if anomalies_coll:
         try:
-            request_flow.mongo.enter()
             anomalies = next(anomalies_coll.find({'name': name, 'app_id': app_id}))
             anomalies = anomalies['anomalies']
         except StopIteration:

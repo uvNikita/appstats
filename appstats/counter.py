@@ -10,8 +10,6 @@ from pymongo.errors import AutoReconnect
 
 from .util import lock
 from .anomaly import Anomaly
-from .metrics import adding_stats_flow
-
 
 log = logging.getLogger(__name__)
 
@@ -307,7 +305,6 @@ class PeriodicCounter(object):
                 sleep(0.1)
 
     def incrby(self, app_id, name, field, increment):
-        adding_stats_flow.incrby.enter()
         if ',' in name:
             raise ValueError("Name can't contain ',' (comma)")
         if ',' in app_id:
@@ -325,7 +322,6 @@ class PeriodicCounter(object):
         pl.zadd(key_app_ids, now, app_id)
         pl.zadd(key_names, now, name)
         pl.incrbyfloat(key, increment)
-        adding_stats_flow.redis.enter()
         pl.execute()
 
     def _remove_old_app_ids(self, latest):
