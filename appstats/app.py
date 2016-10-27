@@ -387,7 +387,7 @@ def tasks(app_id):
         sort_by = '%s_%s' % (sort_by_field, sort_by_period)
         docs = docs.sort(sort_by, DESCENDING)
     request_flow.mongo.enter()
-    docs = len(docs.limit(rows_limit))
+    docs = list(docs.limit(rows_limit))
 
     request_flow.app.enter()
     return render_template('stats.jinja', sort_by_field=sort_by_field,
