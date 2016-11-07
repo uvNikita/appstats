@@ -178,23 +178,17 @@ def add_stats(apps_stats, tasks_stats, apps_counters, tasks_counters):
         log.debug("Adding new apps_stats: \n %s", apps_stats)
         for app_id in apps_stats:
             for name, counts in apps_stats[app_id].iteritems():
-                if 'NUMBER' not in counts:
-                    for counter in apps_counters:
-                        counter.incrby(app_id, name, 'NUMBER', 1)
-                for field, val in counts.iteritems():
-                    for counter in apps_counters:
-                        counter.incrby(app_id, name, field, val)
+                counts.setdefault('NUMBER', 1)
+        for counter in apps_counters:
+            counter.incrby_bulk(apps_stats)
 
     if tasks_stats:
         log.debug("Adding new tasks_stats: \n %s", tasks_stats)
         for app_id in tasks_stats:
             for name, counts in tasks_stats[app_id].iteritems():
-                if 'NUMBER' not in counts:
-                    for counter in tasks_counters:
-                        counter.incrby(app_id, name, 'NUMBER', 1)
-                for field, val in counts.iteritems():
-                    for counter in tasks_counters:
-                        counter.incrby(app_id, name, field, val)
+                counts.setdefault('NUMBER', 1)
+        for counter in tasks_counters:
+            counter.incrby_bulk(tasks_stats)
 
 
 @app.route('/')

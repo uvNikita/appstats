@@ -218,6 +218,32 @@ class RollingCounter(object):
         pl.incrbyfloat(last_val_key, increment)
         pl.execute()
 
+    def incrby_bulk(self, stats):
+        pl = self.db.pipeline()
+        key_app_ids = self._make_key(self.app_ids_key_format)
+        now = timegm(datetime.utcnow().utctimetuple())
+        time_updates_apps = {}
+        for app_id in stats:
+            if ',' in app_id:
+                raise ValueError("App_id can't contain ',' (comma)")
+            time_updates_apps[app_id] = now
+            time_updates_names = {}
+            for name, counts in stats[app_id].iteritems():
+                if ',' in name:
+                    raise ValueError("Name can't contain ',' (comma)")
+                time_updates_names[name] = now
+                for field, val in counts.iteritems():
+                    if field not in self.fields:
+                        return
+                    last_val_key = self._make_key(self.last_val_key_format,
+                                                  app_id=app_id, name=name,
+                                                  field=field)
+                    pl.incrbyfloat(last_val_key, val)
+            key_names = self._make_key(self.names_key_format, app_id=app_id)
+            pl.zadd(key_names, **time_updates_names)
+        pl.zadd(key_app_ids, **time_updates_apps)
+        pl.execute()
+
 
 def with_periodic_counter_lock(func):
     @wraps(func)
@@ -322,6 +348,31 @@ class PeriodicCounter(object):
         pl.zadd(key_app_ids, now, app_id)
         pl.zadd(key_names, now, name)
         pl.incrbyfloat(key, increment)
+        pl.execute()
+
+    def incrby_bulk(self, stats):
+        pl = self.redis_db.pipeline()
+        key_app_ids = self._make_key(self.app_ids_key_format)
+        now = timegm(datetime.utcnow().utctimetuple())
+        time_updates_apps = {}
+        for app_id in stats:
+            if ',' in app_id:
+                raise ValueError("App_id can't contain ',' (comma)")
+            time_updates_apps[app_id] = now
+            time_updates_names = {}
+            for name, counts in stats[app_id].iteritems():
+                if ',' in name:
+                    raise ValueError("Name can't contain ',' (comma)")
+                time_updates_names[name] = now
+                for field, val in counts.iteritems():
+                    if field not in self.fields:
+                        return
+                    key = self._make_key(self.key_format, app_id=app_id,
+                                         name=name, field=field)
+                    pl.incrbyfloat(key, val)
+            key_names = self._make_key(self.names_key_format, app_id=app_id)
+            pl.zadd(key_names, **time_updates_names)
+        pl.zadd(key_app_ids, **time_updates_apps)
         pl.execute()
 
     def _remove_old_app_ids(self, latest):
