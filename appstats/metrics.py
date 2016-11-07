@@ -38,7 +38,7 @@ def patch_redis(redis, pipeline):
             return pipeline_real_execute(*args, **options)
 
     redis.execute_command = redis_execute_with_metrics
-    pipeline.execute_command = redis_execute_with_metrics
+    pipeline.execute = pipeline_execute_with_metrics
     return redis
 
 
