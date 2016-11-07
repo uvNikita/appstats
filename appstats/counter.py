@@ -234,7 +234,7 @@ class RollingCounter(object):
                 time_updates_names[name] = now
                 for field, val in counts.iteritems():
                     if field not in self.fields:
-                        return
+                        continue
                     last_val_key = self._make_key(self.last_val_key_format,
                                                   app_id=app_id, name=name,
                                                   field=field)
@@ -366,7 +366,7 @@ class PeriodicCounter(object):
                 time_updates_names[name] = now
                 for field, val in counts.iteritems():
                     if field not in self.fields:
-                        return
+                        continue
                     key = self._make_key(self.key_format, app_id=app_id,
                                          name=name, field=field)
                     pl.incrbyfloat(key, val)
