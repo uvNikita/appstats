@@ -310,8 +310,13 @@ def add_nav_list():
     return dict(nav_list=nav_list)
 
 
-@stats_bp.route('/appstats')
+@stats_bp.route('/appstats', methods=['GET', 'POST'])
 def appstats(app_id):
+    if request.method == 'POST':
+        post_params = request.form
+        return redirect(current_url(**post_params))
+
+    search_term = request.args.get('search_term')
     anomalies_only = request.args.get('anomalies_only') == 'true'
 
     anomalies = {ann['name'] for ann in mongo_db.anomalies.find({'app_id': app_id})}
@@ -333,7 +338,12 @@ def appstats(app_id):
 
     query = {'app_id': app_id}
     if anomalies_only:
-        query['name'] = {'$in': list(anomalies)}
+        query.setdefault('name', {})
+        query['name']['$in'] = list(anomalies)
+    if search_term:
+        query.setdefault('name', {})
+        query['name']['$regex'] = '.*{}.*'.format(search_term)
+
     docs = mongo_db.appstats_docs.find(query)
 
     if sort_by_field == 'name':
@@ -350,11 +360,18 @@ def appstats(app_id):
                            anomalies_only=anomalies_only,
                            rows_limit_options=ROWS_LIMIT_OPTIONS,
                            selected_field=selected_field,
+                           search_term=search_term,
+                           search_action=current_url(),
                            info_endpoint='.apps_info')
 
 
-@stats_bp.route('/tasks')
+@stats_bp.route('/tasks', methods=['GET', 'POST'])
 def tasks(app_id):
+    if request.method == 'POST':
+        post_params = request.form
+        return redirect(current_url(**post_params))
+
+    search_term = request.args.get('search_term')
     anomalies_only = request.args.get('anomalies_only') == 'true'
 
     anomalies = set([])
@@ -376,7 +393,11 @@ def tasks(app_id):
 
     query = {'app_id': app_id}
     if anomalies_only:
-        query['name'] = {'$in': list(anomalies)}
+        query.setdefault('name', {})
+        query['name']['$in'] = list(anomalies)
+    if search_term:
+        query.setdefault('name', {})
+        query['name']['$regex'] = '.*{}.*'.format(search_term)
     docs = mongo_db.appstats_tasks_docs.find(query)
 
     if sort_by_field == 'name':
@@ -393,6 +414,8 @@ def tasks(app_id):
                            rows_limit=rows_limit,
                            rows_limit_options=ROWS_LIMIT_OPTIONS,
                            selected_field=selected_field,
+                           search_term=search_term,
+                           search_action=current_url(),
                            info_endpoint='.tasks_info')
 
 
@@ -416,6 +439,7 @@ def apps_info(app_id, name):
                            info_hours_options=INFO_HOURS_OPTIONS,
                            num_data=num_data, name=name, hours=hours,
                            time_labels=time_labels, time_data=time_data,
+                           search_action=url_for('.appstats'),
                            anomalies_data=anomalies_data)
 
 
@@ -439,6 +463,7 @@ def tasks_info(app_id, name):
                            info_hours_options=INFO_HOURS_OPTIONS,
                            num_data=num_data, name=name, hours=hours,
                            time_labels=time_labels, time_data=time_data,
+                           search_action=url_for('.tasks'),
                            anomalies_data=anomalies_data)
 
 

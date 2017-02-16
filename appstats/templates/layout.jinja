@@ -6,6 +6,7 @@
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/appstats.css') }}">
         <script src="{{ url_for('static', filename='js/jquery-1.11.3.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/jquery.query-object.js') }}"></script>
     </head>
     <body>
         <div class=container>
@@ -42,6 +43,15 @@
                                     </a>
                                 </li>
                             {% endfor %}
+                            <li>
+                              <form method="post" action="{{ search_action }}" class="navbar-form">
+                                <input class="form-control"
+                                       type="text"
+                                       name="search_term"
+                                       placeholder="Search"
+                                       value="{{ search_term or '' }}">
+                              </form>
+                            </li>
                         </ul>
                     </div>
                 </div>
